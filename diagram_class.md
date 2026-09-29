@@ -1,40 +1,27 @@
 # Diagramme de classes - Exercice 10.a
 
-Ce diagramme représente les principales informations utilisées pour
-décrire une tâche, le modèle utilisé et le résultat obtenu.
-
 ```mermaid
 classDiagram
 
+    Task "1" --> "1" LLM : utilise
+    Task "1" --> "1" Prompt : possède
+    Task "1" --> "1" Result : produit
+
     class Task {
-        +String taskId
-        +String type
-        +String description
+        +taskId
+        +type
     }
 
     class LLM {
-        +String name
+        +name
     }
 
     class Prompt {
-        +String content
+        +content
     }
 
     class Result {
-        +String content
+        +content
+        +problem
     }
-
-    class Problem {
-        +String description
-    }
-
-    class Improvement {
-        +String description
-    }
-
-    Task --> LLM : utilise
-    Task --> Prompt : contient
-    Task --> Result : produit
-    Result --> Problem : présente
-    Problem --> Improvement : nécessite
 ```
