@@ -1,0 +1,96 @@
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix vs: <http://www.w3.org/2003/06/sw-vocab-status/ns#> .
+@prefix o: <http://omeka.org/s/vocabs/o#> .
+@prefix artinq: <https://humanum-p8.fr/omk_artificialinquiries/onto/artinq#> .
+
+<https://humanum-p8.fr/omk_artificialinquiries/onto/artinq#> a owl:Ontology ;
+    dcterms:title "Artificial Inquiries" .
+
+# ---------------------------------------------------------------
+# Classes (diagramme de classes - Exercice 10.a)
+# ---------------------------------------------------------------
+
+artinq:Task a rdfs:Class ;
+    rdfs:label "Task" ;
+    rdfs:comment "Tâche confiée à un LLM." ;
+    rdfs:domain o:Resource ;
+    vs:term_status "experimental" .
+
+artinq:LLM a rdfs:Class ;
+    rdfs:label "LLM" ;
+    rdfs:comment "Modèle de langage utilisé pour réaliser la tâche." ;
+    rdfs:domain o:Resource ;
+    vs:term_status "experimental" .
+
+artinq:Prompt a rdfs:Class ;
+    rdfs:label "Prompt" ;
+    rdfs:comment "Instructions données au LLM pour la tâche." ;
+    rdfs:domain o:Resource ;
+    vs:term_status "experimental" .
+
+artinq:Result a rdfs:Class ;
+    rdfs:label "Result" ;
+    rdfs:comment "Résultat produit par le LLM." ;
+    rdfs:domain o:Resource ;
+    vs:term_status "experimental" .
+
+# ---------------------------------------------------------------
+# Propriétés littérales (attributs des classes)
+# ---------------------------------------------------------------
+
+artinq:taskId a rdf:Property ;
+    rdfs:label "identifiant de la tâche" ;
+    rdfs:domain o:Resource ;
+    vs:term_status "experimental" .
+
+artinq:type a rdf:Property ;
+    rdfs:label "type de tâche" ;
+    rdfs:domain o:Resource ;
+    vs:term_status "experimental" .
+
+artinq:name a rdf:Property ;
+    rdfs:label "nom" ;
+    rdfs:domain o:Resource ;
+    vs:term_status "experimental" .
+
+artinq:content a rdf:Property ;
+    rdfs:label "contenu" ;
+    rdfs:domain o:Resource ;
+    vs:term_status "experimental" .
+
+artinq:problem a rdf:Property ;
+    rdfs:label "problème rencontré" ;
+    rdfs:domain o:Resource ;
+    vs:term_status "experimental" .
+
+artinq:cause a rdf:Property ;
+    rdfs:label "cause du problème" ;
+    rdfs:domain o:Resource ;
+    vs:term_status "experimental" .
+
+artinq:improvement a rdf:Property ;
+    rdfs:label "piste d'amélioration" ;
+    rdfs:domain o:Resource ;
+    vs:term_status "experimental" .
+
+# ---------------------------------------------------------------
+# Propriétés de relation (associations du diagramme)
+# ---------------------------------------------------------------
+
+artinq:usesLLM a rdf:Property ;
+    rdfs:label "utilise" ;
+    rdfs:domain o:Resource ;
+    vs:term_status "experimental" .
+
+artinq:hasPrompt a rdf:Property ;
+    rdfs:label "possède" ;
+    rdfs:domain o:Resource ;
+    vs:term_status "experimental" .
+
+artinq:producesResult a rdf:Property ;
+    rdfs:label "produit" ;
+    rdfs:domain o:Resource ;
+    vs:term_status "experimental" .

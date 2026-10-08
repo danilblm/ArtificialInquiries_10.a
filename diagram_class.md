@@ -23,5 +23,7 @@ classDiagram
     class Result {
         +content
         +problem
+        +cause
+        +improvement
     }
 ```
