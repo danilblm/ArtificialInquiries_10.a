@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Artificial Inquiries – Exercice 10a</title>
+<style>
+  :root {
+    --bg: #f6f5f1; --panel: #ffffff; --ink: #1d1d1b; --muted: #6b6a65;
+    --line: #dddbd3; --accent: #2f5d50; --accent-ink: #ffffff;
+    --danger: #a23b2a; --soft: #eef3f1;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161816; --panel: #1f2220; --ink: #ecebe6; --muted: #9c9b95;
+      --line: #343834; --accent: #7fb8a4; --accent-ink: #10201a;
+      --danger: #e08b7a; --soft: #233029;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { padding: 20px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  header .wrap { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  h1 { margin: 0; font-size: 20px; }
+  h1 small { display: block; font-size: 13px; font-weight: 400; color: var(--muted); }
+  .wrap { max-width: 1000px; margin: 0 auto; }
+  main { padding: 20px 16px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; margin-bottom: 18px; }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 10px 0 4px; }
+  label .req { color: var(--danger); }
+  input, select, textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px;
+                            background: var(--bg); color: var(--ink); font: inherit; }
+  textarea { min-height: 60px; resize: vertical; }
+  button { font: inherit; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--line);
+           background: var(--panel); color: var(--ink); cursor: pointer; }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  button.danger { color: var(--danger); }
+  button:disabled { opacity: .5; cursor: default; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .auth-methods { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-bottom: 8px; }
+  .auth-methods button[aria-pressed="true"] { border-color: var(--accent); background: var(--soft); }
+  .user { font-size: 13px; color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  td.actions { white-space: nowrap; text-align: right; }
+  .tablewrap { overflow-x: auto; }
+  .msg { padding: 10px 12px; border-radius: 6px; margin-bottom: 14px; display: none; }
+  .msg.show { display: block; }
+  .msg.ok { background: var(--soft); }
+  .msg.err { background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); }
+  .hint { font-size: 13px; color: var(--muted); }
+  .hidden { display: none; }
+  .tabs button[aria-selected="true"] .chip { background: rgba(255,255,255,.25); color: inherit; }
+  .chip { display: inline-block; padding: 1px 8px; border-radius: 99px; background: var(--soft); font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Artificial Inquiries<small>Exercice 10a « Room for Improvement » · CRUD via l'API Omeka S</small></h1>
+    <div id="userBox" class="hidden">
+      <span class="user" id="userLabel"></span>
+      <button id="logoutBtn">Se déconnecter</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="msg" class="msg" role="status"></div>
+
+  <!-- ===== Connexion ===== -->
+  <section id="loginView" class="panel">
+    <h2>Connexion</h2>
+    <div class="auth-methods" role="group" aria-label="Méthode d'authentification">
+      <button data-auth="local" aria-pressed="true">Local (clé API Omeka)</button>
+      <button data-auth="cas" aria-pressed="false">CAS (Paris 8)</button>
+      <button data-auth="github" aria-pressed="false">GitHub</button>
+      <button data-auth="google" aria-pressed="false">Google</button>
+    </div>
+
+    <form id="localForm">
+      <label for="apiUrl">URL de l'API Omeka S</label>
+      <input id="apiUrl" required placeholder="http://localhost/omeka-s/omeka-s/api">
+      <label for="keyId">key_identity</label>
+      <input id="keyId" autocomplete="off">
+      <label for="keyCred">key_credential</label>
+      <input id="keyCred" type="password" autocomplete="off">
+      <p class="hint">Les clés se créent dans Omeka : Utilisateurs → ton compte → onglet « Clés API ».
+        Sans clé, l'interface fonctionne en lecture seule (contenus publics).</p>
+      <div class="row">
+        <button class="primary" type="submit">Se connecter</button>
+        <button type="button" id="readOnlyBtn">Continuer en lecture seule</button>
+      </div>
+    </form>
+
+    <div id="externalAuth" class="hidden">
+      <p class="hint" id="externalHint"></p>
+    </div>
+  </section>
+
+  <!-- ===== Application ===== -->
+  <section id="appView" class="hidden">
+    <div class="tabs" role="tablist" id="tabs"></div>
+
+    <div class="panel">
+      <div class="row" style="margin-top:0;justify-content:space-between;align-items:center">
+        <h2 id="listTitle" style="margin:0"></h2>
+        <button class="primary" id="newBtn">+ Nouveau</button>
+      </div>
+      <div class="tablewrap"><table id="listTable"></table></div>
+    </div>
+
+    <div class="panel hidden" id="formPanel">
+      <h2 id="formTitle"></h2>
+      <form id="itemForm"></form>
+    </div>
+  </section>
+</main>
+
+<script>
+/* =====================================================================
+   Configuration
+   ===================================================================== */
+const VOCAB = 'artinq';
+const CLASSES = ['Task', 'LLM', 'Prompt', 'Result'];
+const DEFAULT_API = 'http://localhost/omeka-s/omeka-s/api';
+
+const state = {
+  api: DEFAULT_API, keyId: '', keyCred: '', readOnly: true,
+  classes: {},      // label -> { id, template }
+  current: 'Task',
+  properties: {},   // id -> { term, label }
+  items: {}         // label -> [items]
+};
+
+/* Stockage de session (onglet courant uniquement) */
+const store = {
+  get(k) { try { return sessionStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { sessionStorage.setItem(k, v); } catch {} },
+  clear() { try { sessionStorage.clear(); } catch {} }
+};
+
+/* =====================================================================
+   Appels à l'API Omeka S
+   ===================================================================== */
+function url(path, params = {}) {
+  const u = new URL(state.api.replace(/\/$/, '') + path);
+  for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v);
+  if (state.keyId) {
+    u.searchParams.set('key_identity', state.keyId);
+    u.searchParams.set('key_credential', state.keyCred);
+  }
+  return u;
+}
+
+async function api(method, path, { params, body } = {}) {
+  const res = await fetch(url(path, params), {
+    method,
+    headers: body ? { 'Content-Type': 'application/json' } : {},
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if (res.status === 204) return null;
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    const e = data && data.errors ? JSON.stringify(data.errors) : res.statusText;
+    throw new Error(`${method} ${path} → ${res.status} ${e}`);
+  }
+  return data;
+}
+
+/* =====================================================================
+   Chargement du vocabulaire, des templates et des items
+   ===================================================================== */
+async function loadSchema() {
+  for (const label of CLASSES) {
+    const [cls] = await api('GET', '/resource_classes', { params: { term: `${VOCAB}:${label}` } });
+    if (!cls) throw new Error(`Classe ${VOCAB}:${label} introuvable : le vocabulaire est-il importé ?`);
+    const tpls = await api('GET', '/resource_templates', { params: { label } });
+    const tpl = tpls.find(t => t['o:label'] === label);
+    if (!tpl) throw new Error(`Modèle de ressource « ${label} » introuvable.`);
+    state.classes[label] = { id: cls['o:id'], template: tpl };
+  }
+  // Libellés et termes des propriétés utilisées par les templates
+  const ids = new Set();
+  Object.values(state.classes).forEach(c =>
+    c.template['o:resource_template_property'].forEach(p => ids.add(p['o:property']['o:id'])));
+  await Promise.all([...ids].map(async id => {
+    const p = await api('GET', `/properties/${id}`);
+    state.properties[id] = { term: p['o:term'], label: p['o:label'] };
+  }));
+}
+
+async function loadItems() {
+  await Promise.all(CLASSES.map(async label => {
+    state.items[label] = await api('GET', '/items', {
+      params: { resource_class_id: state.classes[label].id, per_page: 200, sort_by: 'id' }
+    });
+  }));
+}
+
+/* =====================================================================
+   Affichage
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+
+function flash(text, type = 'ok') {
+  const m = $('msg');
+  m.textContent = text;
+  m.className = `msg show ${type}`;
+  clearTimeout(flash.t);
+  flash.t = setTimeout(() => m.className = 'msg', type === 'err' ? 9000 : 3500);
+}
+
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function templateFields(label) {
+  return state.classes[label].template['o:resource_template_property'].map(p => {
+    const prop = state.properties[p['o:property']['o:id']];
+    const types = p['o:data_type'] || [];
+    return {
+      id: p['o:property']['o:id'],
+      term: prop.term,
+      label: p['o:alternate_label'] || prop.label,
+      required: !!p['o:is_required'],
+      isItem: types.some(t => t.startsWith('resource'))
+    };
+  });
+}
+
+function valueText(v) {
+  if (!v) return '';
+  if (v.type && v.type.startsWith('resource')) return v.display_title || `#${v.value_resource_id}`;
+  return v['@value'] ?? v['@id'] ?? '';
+}
+
+function renderTabs() {
+  $('tabs').innerHTML = CLASSES.map(c =>
+    `<button role="tab" aria-selected="${c === state.current}" data-tab="${c}">${c}
+       <span class="chip">${(state.items[c] || []).length}</span></button>`).join('');
+}
+
+function renderList() {
+  renderTabs();
+  const label = state.current;
+  const fields = templateFields(label).filter(f => f.term !== 'dcterms:title');
+  $('listTitle').textContent = label;
+  $('newBtn').disabled = state.readOnly;
+  const items = state.items[label] || [];
+  const head = `<tr><th>#</th><th>Titre</th>${fields.map(f => `<th>${esc(f.label)}</th>`).join('')}<th></th></tr>`;
+  const rows = items.map(it => `<tr>
+      <td>${it['o:id']}</td>
+      <td>${esc(it['o:title'])}</td>
+      ${fields.map(f => `<td>${esc((it[f.term] || []).map(valueText).join(', '))}</td>`).join('')}
+      <td class="actions">
+        <button data-edit="${it['o:id']}" ${state.readOnly ? 'disabled' : ''}>Modifier</button>
+        <button class="danger" data-del="${it['o:id']}" ${state.readOnly ? 'disabled' : ''}>Supprimer</button>
+      </td></tr>`).join('');
+  $('listTable').innerHTML = head + (rows || `<tr><td colspan="${fields.length + 3}" class="hint">Aucun item.</td></tr>`);
+}
+
+function itemOptions(selectedId) {
+  return '<option value="">—</option>' + CLASSES.map(c =>
+    `<optgroup label="${c}">${(state.items[c] || []).map(it =>
+      `<option value="${it['o:id']}" ${it['o:id'] == selectedId ? 'selected' : ''}>${esc(it['o:title'])}</option>`).join('')}</optgroup>`
+  ).join('');
+}
+
+function openForm(item = null) {
+  const label = state.current;
+  $('formTitle').textContent = item ? `Modifier « ${item['o:title']} »` : `Nouveau ${label}`;
+  const fields = templateFields(label);
+  $('itemForm').innerHTML = fields.map(f => {
+    const cur = item && item[f.term] && item[f.term][0];
+    const req = f.required ? ' required' : '';
+    const star = f.required ? ' <span class="req">*</span>' : '';
+    const input = f.isItem
+      ? `<select id="f_${f.id}" name="p_${f.id}"${req}>${itemOptions(cur && cur.value_resource_id)}</select>`
+      : `<textarea id="f_${f.id}" name="p_${f.id}"${req}>${esc(cur ? cur['@value'] : '')}</textarea>`;
+    return `<label for="f_${f.id}">${esc(f.label)}${star} <span class="hint">(${f.term})</span></label>${input}`;
+  }).join('') + `<div class="row"><button class="primary" type="submit">${item ? 'Enregistrer' : 'Créer'}</button>
+      <button type="button" id="cancelBtn">Annuler</button></div>`;
+  $('itemForm').dataset.id = item ? item['o:id'] : '';
+  $('formPanel').classList.remove('hidden');
+  $('cancelBtn').onclick = closeForm;
+  $('formPanel').scrollIntoView({ behavior: 'smooth' });
+}
+
+function closeForm() { $('formPanel').classList.add('hidden'); }
+
+/* Construit le JSON attendu par Omeka S à partir du formulaire */
+function buildPayload(form) {
+  const label = state.current;
+  const payload = {
+    'o:is_public': true,
+    'o:resource_class': { 'o:id': state.classes[label].id },
+    'o:resource_template': { 'o:id': state.classes[label].template['o:id'] }
+  };
+  for (const f of templateFields(label)) {
+    const v = form.elements[`p_${f.id}`].value.trim();
+    if (!v) continue;
+    payload[f.term] = [f.isItem
+      ? { type: 'resource:item', property_id: f.id, value_resource_id: Number(v) }
+      : { type: 'literal', property_id: f.id, '@value': v }];
+  }
+  return payload;
+}
+
+/* =====================================================================
+   CRUD
+   ===================================================================== */
+async function refresh() { await loadItems(); renderList(); }
+
+$('itemForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const id = e.target.dataset.id;
+  try {
+    const body = buildPayload(e.target);
+    if (id) await api('PUT', `/items/${id}`, { body });   // UPDATE
+    else await api('POST', '/items', { body });           // CREATE
+    closeForm();
+    await refresh();
+    flash(id ? 'Item modifié.' : 'Item créé.');
+  } catch (err) { flash(err.message, 'err'); }
+});
+
+document.addEventListener('click', async e => {
+  const t = e.target.closest('button');
+  if (!t) return;
+  if (t.dataset.tab) { state.current = t.dataset.tab; closeForm(); renderList(); }
+  if (t.dataset.edit) {                                                    // READ (un item)
+    try { openForm(await api('GET', `/items/${t.dataset.edit}`)); }
+    catch (err) { flash(err.message, 'err'); }
+  }
+  if (t.dataset.del) {                                                     // DELETE
+    if (!confirm(`Supprimer l'item #${t.dataset.del} ?`)) return;
+    try { await api('DELETE', `/items/${t.dataset.del}`); await refresh(); flash('Item supprimé.'); }
+    catch (err) { flash(err.message, 'err'); }
+  }
+});
+
+$('newBtn').onclick = () => openForm();
+
+/* =====================================================================
+   Authentification
+   ===================================================================== */
+const EXTERNAL = {
+  cas: "La connexion CAS (Paris 8) nécessite le module Omeka S « CAS » installé et configuré sur le serveur : il crée la session Omeka après passage par le serveur CAS de l'université. Une page HTML statique ne peut pas le faire seule.",
+  github: "La connexion GitHub passe par OAuth, qui exige un secret client gardé côté serveur (module Omeka S ou petit serveur intermédiaire). À brancher dans une prochaine étape.",
+  google: "La connexion Google utilise Google Identity Services (OAuth 2.0). Elle demande un « Client ID » créé dans la Google Cloud Console et un module côté Omeka pour associer le compte Google à un utilisateur."
+};
+
+document.querySelectorAll('[data-auth]').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('[data-auth]').forEach(x => x.setAttribute('aria-pressed', x === b));
+  const local = b.dataset.auth === 'local';
+  $('localForm').classList.toggle('hidden', !local);
+  $('externalAuth').classList.toggle('hidden', local);
+  $('externalHint').textContent = EXTERNAL[b.dataset.auth] || '';
+}));
+
+async function start(readOnly) {
+  state.api = $('apiUrl').value.trim() || DEFAULT_API;
+  state.keyId = readOnly ? '' : $('keyId').value.trim();
+  state.keyCred = readOnly ? '' : $('keyCred').value.trim();
+  state.readOnly = readOnly || !state.keyId;
+  try {
+    // Vérifie les clés : un utilisateur authentifié peut lire sa liste de clés API
+    if (!state.readOnly) await api('GET', '/users', { params: { per_page: 1 } });
+    await loadSchema();
+    await loadItems();
+  } catch (err) {
+    flash(`Connexion impossible : ${err.message}. Vérifie l'URL, les clés et la configuration CORS d'Omeka.`, 'err');
+    return;
+  }
+  store.set('api', state.api);
+  if (!state.readOnly) { store.set('keyId', state.keyId); store.set('keyCred', state.keyCred); }
+  $('loginView').classList.add('hidden');
+  $('appView').classList.remove('hidden');
+  $('userBox').classList.remove('hidden');
+  $('userLabel').textContent = state.readOnly ? 'Lecture seule' : `Connecté (clé ${state.keyId.slice(0, 6)}…)`;
+  renderList();
+}
+
+$('localForm').addEventListener('submit', e => { e.preventDefault(); start(false); });
+$('readOnlyBtn').onclick = () => start(true);
+$('logoutBtn').onclick = () => { store.clear(); location.reload(); };
+
+/* Reprise de session */
+$('apiUrl').value = store.get('api') || DEFAULT_API;
+if (store.get('keyId')) {
+  $('keyId').value = store.get('keyId');
+  $('keyCred').value = store.get('keyCred') || '';
+  start(false);
+}
+</script>
+</body>
+</html>
