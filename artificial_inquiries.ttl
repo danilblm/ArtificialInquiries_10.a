@@ -9,9 +9,7 @@
 <https://humanum-p8.fr/omk_artificialinquiries/onto/artinq#> a owl:Ontology ;
     dcterms:title "Artificial Inquiries" .
 
-# ---------------------------------------------------------------
-# Classes (diagramme de classes - Exercice 10.a)
-# ---------------------------------------------------------------
+#class pour le diagramme de classe
 
 artinq:Task a rdfs:Class ;
     rdfs:label "Task" ;
@@ -37,9 +35,8 @@ artinq:Result a rdfs:Class ;
     rdfs:domain o:Resource ;
     vs:term_status "experimental" .
 
-# ---------------------------------------------------------------
-# Propriétés littérales (attributs des classes)
-# ---------------------------------------------------------------
+# Proprietes de relation
+
 
 artinq:taskId a rdf:Property ;
     rdfs:label "identifiant de la tâche" ;
@@ -76,9 +73,9 @@ artinq:improvement a rdf:Property ;
     rdfs:domain o:Resource ;
     vs:term_status "experimental" .
 
-# ---------------------------------------------------------------
-# Propriétés de relation (associations du diagramme)
-# ---------------------------------------------------------------
+
+# Proprietes de relation 
+
 
 artinq:usesLLM a rdf:Property ;
     rdfs:label "utilise" ;
