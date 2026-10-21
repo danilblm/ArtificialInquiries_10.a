@@ -98,7 +98,16 @@
     </form>
 
     <div id="externalAuth" class="hidden">
+      <label for="gatewayUrl">URL de la passerelle d'authentification (auth.php)</label>
+      <input id="gatewayUrl" placeholder="http://localhost/omeka-s/auth/auth.php">
+      <label for="apiUrl2">URL de l'API Omeka S</label>
+      <input id="apiUrl2" placeholder="http://localhost/omeka-s/omeka-s/api">
       <p class="hint" id="externalHint"></p>
+      <div class="row">
+        <div id="googleBtn" class="hidden"></div>
+        <button class="primary hidden" type="button" id="githubBtn">Se connecter avec GitHub</button>
+        <button class="primary hidden" type="button" id="casBtn">Se connecter avec le CAS</button>
+      </div>
     </div>
   </section>
 
@@ -348,20 +357,125 @@ $('newBtn').onclick = () => openForm();
 
 /* =====================================================================
    Authentification
+   - local  : clé API Omeka saisie par l'utilisateur
+   - google : Google Identity Services → ID token vérifié par auth.php
+   - github : OAuth GitHub (redirection) → code échangé par auth.php
+   - cas    : redirection vers le serveur CAS → ticket validé par auth.php
+   auth.php renvoie l'identité et, si le compte est associé, la clé Omeka.
    ===================================================================== */
-const EXTERNAL = {
-  cas: "La connexion CAS (Paris 8) nécessite le module Omeka S « CAS » installé et configuré sur le serveur : il crée la session Omeka après passage par le serveur CAS de l'université. Une page HTML statique ne peut pas le faire seule.",
-  github: "La connexion GitHub passe par OAuth, qui exige un secret client gardé côté serveur (module Omeka S ou petit serveur intermédiaire). À brancher dans une prochaine étape.",
-  google: "La connexion Google utilise Google Identity Services (OAuth 2.0). Elle demande un « Client ID » créé dans la Google Cloud Console et un module côté Omeka pour associer le compte Google à un utilisateur."
+const DEFAULT_GATEWAY = 'http://localhost/omeka-s/auth/auth.php';
+const PAGE_URL = location.origin + location.pathname;   // URL de retour (sans paramètres)
+let gatewayCfg = null;
+
+const HINTS = {
+  google: "Connexion avec ton compte Google. L'identité est vérifiée par la passerelle auth.php.",
+  github: "Tu vas être redirigé vers GitHub pour autoriser l'application, puis revenir ici.",
+  cas: "Tu vas être redirigé vers le serveur CAS de l'université, puis revenir ici."
 };
+
+function gatewayUrl() {
+  return ($('gatewayUrl').value.trim() || store.get('gateway') || DEFAULT_GATEWAY);
+}
+
+async function gateway(body) {
+  const res = await fetch(gatewayUrl(), {
+    method: body ? 'POST' : 'GET',
+    headers: body ? { 'Content-Type': 'application/json' } : {},
+    body: body ? JSON.stringify(body) : undefined
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Passerelle : ${res.status}`);
+  return data;
+}
+
+async function loadGatewayConfig() {
+  if (gatewayCfg) return gatewayCfg;
+  const u = new URL(gatewayUrl()); u.searchParams.set('config', '1');
+  const res = await fetch(u);
+  if (!res.ok) throw new Error(`Passerelle injoignable (${res.status})`);
+  return (gatewayCfg = await res.json());
+}
+
+function loadScript(src) {
+  return new Promise((ok, ko) => {
+    if (document.querySelector(`script[src="${src}"]`)) return ok();
+    const s = document.createElement('script');
+    s.src = src; s.onload = ok; s.onerror = () => ko(new Error('Script Google non chargé'));
+    document.head.appendChild(s);
+  });
+}
+
+async function showProvider(p) {
+  ['googleBtn', 'githubBtn', 'casBtn'].forEach(id => $(id).classList.add('hidden'));
+  $('externalHint').textContent = HINTS[p];
+  store.set('gateway', gatewayUrl());
+  try {
+    const cfg = await loadGatewayConfig();
+    if (p === 'google') {
+      if (!cfg.google_client_id) throw new Error('google_client_id non renseigné dans config.php');
+      await loadScript('https://accounts.google.com/gsi/client');
+      google.accounts.id.initialize({
+        client_id: cfg.google_client_id,
+        callback: r => externalLogin({ provider: 'google', credential: r.credential })
+      });
+      google.accounts.id.renderButton($('googleBtn'), { theme: 'outline', size: 'large', text: 'signin_with' });
+      $('googleBtn').classList.remove('hidden');
+    }
+    if (p === 'github') {
+      if (!cfg.github_client_id) throw new Error('github_client_id non renseigné dans config.php');
+      $('githubBtn').classList.remove('hidden');
+    }
+    if (p === 'cas') {
+      if (!cfg.cas_server) throw new Error('cas_server non renseigné dans config.php');
+      $('casBtn').classList.remove('hidden');
+    }
+  } catch (err) {
+    flash(`${err.message}. Vérifie que WAMP tourne et que auth.php est configuré.`, 'err');
+  }
+}
 
 document.querySelectorAll('[data-auth]').forEach(b => b.addEventListener('click', () => {
   document.querySelectorAll('[data-auth]').forEach(x => x.setAttribute('aria-pressed', x === b));
   const local = b.dataset.auth === 'local';
   $('localForm').classList.toggle('hidden', !local);
   $('externalAuth').classList.toggle('hidden', local);
-  $('externalHint').textContent = EXTERNAL[b.dataset.auth] || '';
+  if (!local) showProvider(b.dataset.auth);
 }));
+
+$('githubBtn').onclick = () => {
+  const st = 'github-' + crypto.getRandomValues(new Uint32Array(1))[0];
+  store.set('oauthState', st);
+  store.set('apiFromExternal', $('apiUrl2').value.trim() || DEFAULT_API);
+  const u = new URL('https://github.com/login/oauth/authorize');
+  u.searchParams.set('client_id', gatewayCfg.github_client_id);
+  u.searchParams.set('redirect_uri', PAGE_URL);
+  u.searchParams.set('scope', 'read:user');
+  u.searchParams.set('state', st);
+  location.href = u;
+};
+
+$('casBtn').onclick = () => {
+  store.set('casPending', '1');
+  store.set('apiFromExternal', $('apiUrl2').value.trim() || DEFAULT_API);
+  location.href = gatewayCfg.cas_server.replace(/\/$/, '') + '/login?service=' + encodeURIComponent(PAGE_URL);
+};
+
+/* Appelée après Google, ou au retour de GitHub / du CAS */
+async function externalLogin(body) {
+  try {
+    const { user, keys } = await gateway(body);
+    store.set('userName', `${user.name} (${user.id.split(':')[0]})`);
+    if (!$('apiUrl').value.trim() || body.provider === 'google') $('apiUrl').value = $('apiUrl2').value.trim() || store.get('apiFromExternal') || DEFAULT_API;
+    if (keys) {
+      $('keyId').value = keys.key_identity;
+      $('keyCred').value = keys.key_credential;
+      await start(false);
+    } else {
+      await start(true);
+      flash(`Connecté en tant que ${user.name}, mais ce compte (${user.id}) n'est pas associé à une clé Omeka dans config.php : lecture seule.`, 'err');
+    }
+  } catch (err) { flash(`Connexion ${body.provider} impossible : ${err.message}`, 'err'); }
+}
 
 async function start(readOnly) {
   state.api = $('apiUrl').value.trim() || DEFAULT_API;
@@ -369,7 +483,7 @@ async function start(readOnly) {
   state.keyCred = readOnly ? '' : $('keyCred').value.trim();
   state.readOnly = readOnly || !state.keyId;
   try {
-    // Vérifie les clés : un utilisateur authentifié peut lire sa liste de clés API
+    // Vérifie les clés : une clé invalide renvoie une erreur d'authentification
     if (!state.readOnly) await api('GET', '/users', { params: { per_page: 1 } });
     await loadSchema();
     await loadItems();
@@ -382,17 +496,36 @@ async function start(readOnly) {
   $('loginView').classList.add('hidden');
   $('appView').classList.remove('hidden');
   $('userBox').classList.remove('hidden');
-  $('userLabel').textContent = state.readOnly ? 'Lecture seule' : `Connecté (clé ${state.keyId.slice(0, 6)}…)`;
+  const who = store.get('userName');
+  $('userLabel').textContent = (who ? who + ' · ' : '') +
+    (state.readOnly ? 'lecture seule' : `clé ${state.keyId.slice(0, 6)}…`);
   renderList();
 }
 
-$('localForm').addEventListener('submit', e => { e.preventDefault(); start(false); });
+$('localForm').addEventListener('submit', e => { e.preventDefault(); store.set('userName', ''); start(false); });
 $('readOnlyBtn').onclick = () => start(true);
-$('logoutBtn').onclick = () => { store.clear(); location.reload(); };
+$('logoutBtn').onclick = () => {
+  ['keyId', 'keyCred', 'userName', 'oauthState', 'casPending'].forEach(k => store.set(k, ''));
+  location.href = PAGE_URL;
+};
 
-/* Reprise de session */
+/* ===== Démarrage : retour GitHub / CAS, ou reprise de session ===== */
 $('apiUrl').value = store.get('api') || DEFAULT_API;
-if (store.get('keyId')) {
+$('apiUrl2').value = store.get('apiFromExternal') || DEFAULT_API;
+$('gatewayUrl').value = store.get('gateway') || DEFAULT_GATEWAY;
+
+const qs = new URLSearchParams(location.search);
+if (qs.has('code') && qs.get('state') && qs.get('state') === store.get('oauthState')) {
+  history.replaceState(null, '', PAGE_URL);
+  store.set('oauthState', '');
+  $('apiUrl').value = store.get('apiFromExternal') || DEFAULT_API;
+  externalLogin({ provider: 'github', code: qs.get('code') });
+} else if (qs.has('ticket') && store.get('casPending')) {
+  history.replaceState(null, '', PAGE_URL);
+  store.set('casPending', '');
+  $('apiUrl').value = store.get('apiFromExternal') || DEFAULT_API;
+  externalLogin({ provider: 'cas', ticket: qs.get('ticket'), service: PAGE_URL });
+} else if (store.get('keyId')) {
   $('keyId').value = store.get('keyId');
   $('keyCred').value = store.get('keyCred') || '';
   start(false);
