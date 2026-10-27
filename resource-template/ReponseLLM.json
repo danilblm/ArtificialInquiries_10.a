@@ -1,7 +1,11 @@
 {
-    "o:label": "Artificial Inquiries – Réponse LLM",
+    "o:label": "Artificial Inquiries – Réponse d'un LLM",
     "o:resource_template_property": [
         {
+            "vocabulary_namespace_uri": "http://purl.org/dc/terms/",
+            "vocabulary_label": "Dublin Core",
+            "local_name": "title",
+            "label": "Title",
             "o:alternate_label": "Titre",
             "o:alternate_comment": null,
             "o:is_required": true,
@@ -12,13 +16,13 @@
                     "name": "literal",
                     "label": "Text"
                 }
-            ],
+            ]
+        },
+        {
             "vocabulary_namespace_uri": "http://purl.org/dc/terms/",
             "vocabulary_label": "Dublin Core",
-            "local_name": "title",
-            "label": "Title"
-        },
-        {
+            "local_name": "description",
+            "label": "Description",
             "o:alternate_label": null,
             "o:alternate_comment": null,
             "o:is_required": false,
@@ -29,30 +33,13 @@
                     "name": "literal",
                     "label": "Text"
                 }
-            ],
+            ]
+        },
+        {
             "vocabulary_namespace_uri": "https://humanum-p8.fr/omk_artificialinquiries/onto/artinq#",
-            "vocabulary_label": "Artificial Inquieries",
+            "vocabulary_label": "Artificial Inquiries",
             "local_name": "texte",
-            "label": "texte"
-        },
-        {
-            "o:alternate_label": null,
-            "o:alternate_comment": null,
-            "o:is_required": true,
-            "o:is_private": false,
-            "o:default_lang": null,
-            "data_types": [
-                {
-                    "name": "literal",
-                    "label": "Text"
-                }
-            ],
-            "vocabulary_namespace_uri": "https://humanum-p8.fr/omk_artificialinquiries/onto/artinq#",
-            "vocabulary_label": "Artificial Inquieries",
-            "local_name": "probleme",
-            "label": "problème rencontré"
-        },
-        {
+            "label": "texte",
             "o:alternate_label": null,
             "o:alternate_comment": null,
             "o:is_required": false,
@@ -63,13 +50,13 @@
                     "name": "literal",
                     "label": "Text"
                 }
-            ],
-            "vocabulary_namespace_uri": "https://humanum-p8.fr/omk_artificialinquiries/onto/artinq#",
-            "vocabulary_label": "Artificial Inquieries",
-            "local_name": "cause",
-            "label": "cause"
+            ]
         },
         {
+            "vocabulary_namespace_uri": "http://purl.org/dc/terms/",
+            "vocabulary_label": "Dublin Core",
+            "local_name": "identifier",
+            "label": "Identifier",
             "o:alternate_label": null,
             "o:alternate_comment": null,
             "o:is_required": false,
@@ -80,13 +67,47 @@
                     "name": "literal",
                     "label": "Text"
                 }
-            ],
+            ]
+        },
+        {
             "vocabulary_namespace_uri": "https://humanum-p8.fr/omk_artificialinquiries/onto/artinq#",
-            "vocabulary_label": "Artificial Inquieries",
+            "vocabulary_label": "Artificial Inquiries",
             "local_name": "amelioration",
-            "label": "piste d'amélioration"
+            "label": "piste d'amélioration",
+            "o:alternate_label": null,
+            "o:alternate_comment": null,
+            "o:is_required": false,
+            "o:is_private": false,
+            "o:default_lang": null,
+            "data_types": [
+                {
+                    "name": "literal",
+                    "label": "Text"
+                }
+            ]
         },
         {
+            "vocabulary_namespace_uri": "https://humanum-p8.fr/omk_artificialinquiries/onto/artinq#",
+            "vocabulary_label": "Artificial Inquiries",
+            "local_name": "cause",
+            "label": "cause",
+            "o:alternate_label": null,
+            "o:alternate_comment": null,
+            "o:is_required": false,
+            "o:is_private": false,
+            "o:default_lang": null,
+            "data_types": [
+                {
+                    "name": "literal",
+                    "label": "Text"
+                }
+            ]
+        },
+        {
+            "vocabulary_namespace_uri": "https://humanum-p8.fr/omk_artificialinquiries/onto/artinq#",
+            "vocabulary_label": "Artificial Inquiries",
+            "local_name": "codeAnonyme",
+            "label": "code d'anonymisation",
             "o:alternate_label": null,
             "o:alternate_comment": null,
             "o:is_required": false,
@@ -97,16 +118,80 @@
                     "name": "resource:item",
                     "label": "Item"
                 }
-            ],
+            ]
+        },
+        {
             "vocabulary_namespace_uri": "https://humanum-p8.fr/omk_artificialinquiries/onto/artinq#",
-            "vocabulary_label": "Artificial Inquieries",
+            "vocabulary_label": "Artificial Inquiries",
+            "local_name": "probleme",
+            "label": "problème rencontré",
+            "o:alternate_label": null,
+            "o:alternate_comment": null,
+            "o:is_required": false,
+            "o:is_private": false,
+            "o:default_lang": null,
+            "data_types": [
+                {
+                    "name": "literal",
+                    "label": "Text"
+                }
+            ]
+        },
+        {
+            "vocabulary_namespace_uri": "https://humanum-p8.fr/omk_artificialinquiries/onto/artinq#",
+            "vocabulary_label": "Artificial Inquiries",
+            "local_name": "produitReponse",
+            "label": "produit la réponse",
+            "o:alternate_label": null,
+            "o:alternate_comment": null,
+            "o:is_required": false,
+            "o:is_private": false,
+            "o:default_lang": null,
+            "data_types": [
+                {
+                    "name": "resource:item",
+                    "label": "Item"
+                }
+            ]
+        },
+        {
+            "vocabulary_namespace_uri": "https://humanum-p8.fr/omk_artificialinquiries/onto/artinq#",
+            "vocabulary_label": "Artificial Inquiries",
             "local_name": "produitePar",
-            "label": "produite par"
+            "label": "produite par",
+            "o:alternate_label": null,
+            "o:alternate_comment": null,
+            "o:is_required": false,
+            "o:is_private": false,
+            "o:default_lang": null,
+            "data_types": [
+                {
+                    "name": "resource:item",
+                    "label": "Item"
+                }
+            ]
+        },
+        {
+            "vocabulary_namespace_uri": "https://humanum-p8.fr/omk_artificialinquiries/onto/artinq#",
+            "vocabulary_label": "Artificial Inquiries",
+            "local_name": "statut",
+            "label": "statut",
+            "o:alternate_label": null,
+            "o:alternate_comment": null,
+            "o:is_required": false,
+            "o:is_private": false,
+            "o:default_lang": null,
+            "data_types": [
+                {
+                    "name": "literal",
+                    "label": "Text"
+                }
+            ]
         }
     ],
     "o:resource_class": {
         "vocabulary_namespace_uri": "https://humanum-p8.fr/omk_artificialinquiries/onto/artinq#",
-        "vocabulary_label": "Artificial Inquieries",
+        "vocabulary_label": "Artificial Inquiries",
         "local_name": "ReponseLLM",
         "label": "Réponse d'un LLM"
     },
@@ -115,5 +200,11 @@
         "vocabulary_label": "Dublin Core",
         "local_name": "title",
         "label": "Title"
+    },
+    "o:description_property": {
+        "vocabulary_namespace_uri": "http://purl.org/dc/terms/",
+        "vocabulary_label": "Dublin Core",
+        "local_name": "description",
+        "label": "Description"
     }
 }
