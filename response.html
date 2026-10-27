@@ -229,12 +229,12 @@ async function loadItems() {
    ===================================================================== */
 const $ = id => document.getElementById(id);
 
-function flash(text, type = 'ok') {
+function flash(text, type = 'ok', ms) {
   const m = $('msg');
   m.textContent = text;
   m.className = `msg show ${type}`;
   clearTimeout(flash.t);
-  flash.t = setTimeout(() => m.className = 'msg', type === 'err' ? 9000 : 3500);
+  flash.t = setTimeout(() => m.className = 'msg', ms || (type === 'err' ? 9000 : 3500));
 }
 
 function esc(s) {
@@ -502,7 +502,7 @@ async function externalLogin(body) {
       store.set('extUser', '1');
       document.querySelector('[data-auth="local"]').click();
       $('userLabel').textContent = store.get('userName');
-      flash(`Identité vérifiée : ${user.name} (${user.id}). Saisis ta clé API de la base Omeka pour modifier les données, ou clique sur « Continuer en lecture seule ».`);
+      flash(`Identité vérifiée : ${user.name} (${user.id}). Saisis ta clé API de la base Omeka pour modifier les données, ou clique sur « Continuer en lecture seule ».`, 'ok', 60000);
     }
   } catch (err) { flash(`Connexion ${body.provider} impossible : ${err.message}`, 'err'); }
 }
