@@ -499,10 +499,12 @@ async function externalLogin(body) {
       await start(false);
     } else {
       // Identité vérifiée, mais pas de clé associée : l'utilisateur saisit sa propre clé Omeka
+      // → on entre directement dans l'application en lecture seule
       store.set('extUser', '1');
-      document.querySelector('[data-auth="local"]').click();
-      $('userLabel').textContent = store.get('userName');
-      flash(`Identité vérifiée : ${user.name} (${user.id}). Saisis ta clé API de la base Omeka pour modifier les données, ou clique sur « Continuer en lecture seule ».`, 'ok', 60000);
+      $('keyId').value = ''; $('keyCred').value = '';
+      await start(true);
+      if (!$('appView').classList.contains('hidden'))
+        flash(`Connecté : ${user.name} (${user.id}), en lecture seule. Pour créer ou modifier, déconnecte-toi et utilise « Local » avec ta clé API de la base Omeka.`, 'ok', 15000);
     }
   } catch (err) { flash(`Connexion ${body.provider} impossible : ${err.message}`, 'err'); }
 }
