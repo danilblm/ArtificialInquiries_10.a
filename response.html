@@ -84,7 +84,7 @@
 
     <form id="localForm">
       <label for="apiUrl">URL de l'API Omeka S</label>
-      <input id="apiUrl" required placeholder="http://localhost/omeka-s/omeka-s/api">
+      <input id="apiUrl" required placeholder="https://humanum-p8.fr/omk_artificialinquiries/api">
       <label for="keyId">key_identity</label>
       <input id="keyId" autocomplete="off">
       <label for="keyCred">key_credential</label>
@@ -101,7 +101,7 @@
       <label for="gatewayUrl">URL de la passerelle d'authentification (auth.php)</label>
       <input id="gatewayUrl" placeholder="http://localhost/omeka-s/auth/auth.php">
       <label for="apiUrl2">URL de l'API Omeka S</label>
-      <input id="apiUrl2" placeholder="http://localhost/omeka-s/omeka-s/api">
+      <input id="apiUrl2" placeholder="https://humanum-p8.fr/omk_artificialinquiries/api">
       <p class="hint" id="externalHint"></p>
       <div class="row">
         <div id="googleBtn" class="hidden"></div>
@@ -135,13 +135,21 @@
    Configuration
    ===================================================================== */
 const VOCAB = 'artinq';
-const CLASSES = ['Task', 'LLM', 'Prompt', 'Result'];
-const DEFAULT_API = 'http://localhost/omeka-s/omeka-s/api';
+// Classes du vocabulaire commun (artinq) et resource templates communs associés
+const CLASSES = ['Tache', 'LLM', 'Prompt', 'ReponseLLM'];
+const META = {
+  Tache:      { label: 'Tâche',      template: 'Artificial Inquiries – Tâche' },
+  LLM:        { label: 'LLM',        template: 'Artificial Inquiries – LLM' },
+  Prompt:     { label: 'Prompt',     template: 'Artificial Inquiries – Prompt' },
+  ReponseLLM: { label: 'Réponse LLM', template: 'Artificial Inquiries – Réponse LLM' }
+};
+// Base Omeka commune (le champ « URL de l'API » permet aussi d'utiliser un Omeka local)
+const DEFAULT_API = 'https://humanum-p8.fr/omk_artificialinquiries/api';
 
 const state = {
   api: DEFAULT_API, keyId: '', keyCred: '', readOnly: true,
   classes: {},      // label -> { id, template }
-  current: 'Task',
+  current: 'Tache',
   properties: {},   // id -> { term, label }
   items: {}         // label -> [items]
 };
@@ -185,14 +193,17 @@ async function api(method, path, { params, body } = {}) {
    Chargement du vocabulaire, des templates et des items
    ===================================================================== */
 async function loadSchema() {
-  for (const label of CLASSES) {
-    const [cls] = await api('GET', '/resource_classes', { params: { term: `${VOCAB}:${label}` } });
-    if (!cls) throw new Error(`Classe ${VOCAB}:${label} introuvable : le vocabulaire est-il importé ?`);
-    const tpls = await api('GET', '/resource_templates', { params: { label } });
-    const tpl = tpls.find(t => t['o:label'] === label);
-    if (!tpl) throw new Error(`Modèle de ressource « ${label} » introuvable.`);
-    state.classes[label] = { id: cls['o:id'], template: tpl };
-  }
+  // Les 8 requêtes (classe + template de chaque type) partent en parallèle
+  await Promise.all(CLASSES.map(async key => {
+    const [classes, tpls] = await Promise.all([
+      api('GET', '/resource_classes', { params: { term: `${VOCAB}:${key}` } }),
+      api('GET', '/resource_templates', { params: { label: META[key].template } })
+    ]);
+    if (!classes[0]) throw new Error(`Classe ${VOCAB}:${key} introuvable dans le vocabulaire commun`);
+    const tpl = tpls.find(t => t['o:label'] === META[key].template);
+    if (!tpl) throw new Error(`Modèle de ressource « ${META[key].template} » introuvable : importe-le dans la base`);
+    state.classes[key] = { id: classes[0]['o:id'], template: tpl };
+  }));
   // Libellés et termes des propriétés utilisées par les templates
   const ids = new Set();
   Object.values(state.classes).forEach(c =>
@@ -250,7 +261,7 @@ function valueText(v) {
 
 function renderTabs() {
   $('tabs').innerHTML = CLASSES.map(c =>
-    `<button role="tab" aria-selected="${c === state.current}" data-tab="${c}">${c}
+    `<button role="tab" aria-selected="${c === state.current}" data-tab="${c}">${META[c].label}
        <span class="chip">${(state.items[c] || []).length}</span></button>`).join('');
 }
 
@@ -258,7 +269,7 @@ function renderList() {
   renderTabs();
   const label = state.current;
   const fields = templateFields(label).filter(f => f.term !== 'dcterms:title');
-  $('listTitle').textContent = label;
+  $('listTitle').textContent = META[label].label;
   $('newBtn').disabled = state.readOnly;
   const items = state.items[label] || [];
   const head = `<tr><th>#</th><th>Titre</th>${fields.map(f => `<th>${esc(f.label)}</th>`).join('')}<th></th></tr>`;
@@ -275,14 +286,14 @@ function renderList() {
 
 function itemOptions(selectedId) {
   return '<option value="">—</option>' + CLASSES.map(c =>
-    `<optgroup label="${c}">${(state.items[c] || []).map(it =>
+    `<optgroup label="${META[c].label}">${(state.items[c] || []).map(it =>
       `<option value="${it['o:id']}" ${it['o:id'] == selectedId ? 'selected' : ''}>${esc(it['o:title'])}</option>`).join('')}</optgroup>`
   ).join('');
 }
 
 function openForm(item = null) {
   const label = state.current;
-  $('formTitle').textContent = item ? `Modifier « ${item['o:title']} »` : `Nouveau ${label}`;
+  $('formTitle').textContent = item ? `Modifier « ${item['o:title']} »` : `Nouveau : ${META[label].label}`;
   const fields = templateFields(label);
   $('itemForm').innerHTML = fields.map(f => {
     const cur = item && item[f.term] && item[f.term][0];
