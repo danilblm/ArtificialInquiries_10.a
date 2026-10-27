@@ -99,7 +99,7 @@
 
     <div id="externalAuth" class="hidden">
       <label for="gatewayUrl">URL de la passerelle d'authentification (auth.php)</label>
-      <input id="gatewayUrl" placeholder="http://localhost/omeka-s/auth/auth.php">
+      <input id="gatewayUrl" placeholder="https://bellahmer.alwaysdata.net/auth/auth.php">
       <label for="apiUrl2">URL de l'API Omeka S</label>
       <input id="apiUrl2" placeholder="https://humanum-p8.fr/omk_artificialinquiries/api">
       <p class="hint" id="externalHint"></p>
@@ -389,7 +389,8 @@ $('newBtn').onclick = () => openForm();
    - cas    : redirection vers le serveur CAS → ticket validé par auth.php
    auth.php renvoie l'identité et, si le compte est associé, la clé Omeka.
    ===================================================================== */
-const DEFAULT_GATEWAY = 'http://localhost/omeka-s/auth/auth.php';
+// Passerelle d'authentification hébergée en ligne (alwaysdata)
+const DEFAULT_GATEWAY = 'https://bellahmer.alwaysdata.net/auth/auth.php';
 const PAGE_URL = location.origin + location.pathname;   // URL de retour (sans paramètres)
 let gatewayCfg = null;
 
@@ -497,8 +498,11 @@ async function externalLogin(body) {
       $('keyCred').value = keys.key_credential;
       await start(false);
     } else {
-      await start(true);
-      flash(`Connecté en tant que ${user.name}, mais ce compte (${user.id}) n'est pas associé à une clé Omeka dans config.php : lecture seule.`, 'err');
+      // Identité vérifiée, mais pas de clé associée : l'utilisateur saisit sa propre clé Omeka
+      store.set('extUser', '1');
+      document.querySelector('[data-auth="local"]').click();
+      $('userLabel').textContent = store.get('userName');
+      flash(`Identité vérifiée : ${user.name} (${user.id}). Saisis ta clé API de la base Omeka pour modifier les données, ou clique sur « Continuer en lecture seule ».`);
     }
   } catch (err) { flash(`Connexion ${body.provider} impossible : ${err.message}`, 'err'); }
 }
@@ -528,10 +532,14 @@ async function start(readOnly) {
   renderList();
 }
 
-$('localForm').addEventListener('submit', e => { e.preventDefault(); store.set('userName', ''); start(false); });
+$('localForm').addEventListener('submit', e => {
+  e.preventDefault();
+  if (!store.get('extUser')) store.set('userName', '');   // garde le nom Google/GitHub/CAS si on vient d'une connexion externe
+  start(false);
+});
 $('readOnlyBtn').onclick = () => start(true);
 $('logoutBtn').onclick = () => {
-  ['keyId', 'keyCred', 'userName', 'oauthState', 'casPending'].forEach(k => store.set(k, ''));
+  ['keyId', 'keyCred', 'userName', 'oauthState', 'casPending', 'extUser'].forEach(k => store.set(k, ''));
   location.href = PAGE_URL;
 };
 
