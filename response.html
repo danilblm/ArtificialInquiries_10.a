@@ -205,21 +205,22 @@ async function api(method, path, { params, body } = {}) {
    Chargement du vocabulaire, des templates et des items
    ===================================================================== */
 async function loadSchema() {
-  // Les 8 requêtes (classe + template de chaque type) partent en parallèle
-  await Promise.all(CLASSES.map(async key => {
-    const [classes, tpls] = await Promise.all([
-      api('GET', '/resource_classes', { params: { term: `${VOCAB}:${key}` } }),
-      api('GET', '/resource_templates', { params: { label: META[key].template } })
-    ]);
-    if (!classes[0]) throw new Error(`Classe ${VOCAB}:${key} introuvable dans le vocabulaire commun`);
+  // 4 requêtes en tout, lancées en même temps : toutes les classes artinq, tous les modèles,
+  // et les propriétés (artinq + dcterms) — au lieu d'une requête par classe et par modèle
+  const [classes, tpls, ...props] = await Promise.all([
+    api('GET', '/resource_classes', { params: { vocabulary_prefix: VOCAB, per_page: 1000 } }),
+    api('GET', '/resource_templates', { params: { per_page: 1000 } }),
+    ...['artinq', 'dcterms'].map(prefix =>
+      api('GET', '/properties', { params: { vocabulary_prefix: prefix, per_page: 1000 } }))
+  ]);
+  for (const key of CLASSES) {
+    const cls = classes.find(c => c['o:term'] === `${VOCAB}:${key}`);
+    if (!cls) throw new Error(`Classe ${VOCAB}:${key} introuvable dans le vocabulaire commun`);
     const tpl = tpls.find(t => t['o:label'] === META[key].template);
     if (!tpl) throw new Error(`Modèle de ressource « ${META[key].template} » introuvable : importe-le dans la base`);
-    state.classes[key] = { id: classes[0]['o:id'], template: tpl };
-  }));
-  // Libellés et termes des propriétés : 2 requêtes (artinq + dcterms) au lieu d'une par propriété
-  const lists = await Promise.all(['artinq', 'dcterms'].map(prefix =>
-    api('GET', '/properties', { params: { vocabulary_prefix: prefix, per_page: 1000 } })));
-  lists.flat().forEach(p => { state.properties[p['o:id']] = { term: p['o:term'], label: p['o:label'] }; });
+    state.classes[key] = { id: cls['o:id'], template: tpl };
+  }
+  props.flat().forEach(p => { state.properties[p['o:id']] = { term: p['o:term'], label: p['o:label'] }; });
 }
 
 async function loadItems() {
