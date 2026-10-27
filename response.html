@@ -138,10 +138,16 @@ const VOCAB = 'artinq';
 // Classes du vocabulaire commun (artinq) et resource templates communs associés
 const CLASSES = ['Tache', 'LLM', 'Prompt', 'ReponseLLM'];
 const META = {
-  Tache:      { label: 'Tâche',      template: 'Artificial Inquiries – Tâche' },
-  LLM:        { label: 'LLM',        template: 'Artificial Inquiries – LLM' },
-  Prompt:     { label: 'Prompt',     template: 'Artificial Inquiries – Prompt' },
-  ReponseLLM: { label: 'Réponse LLM', template: 'Artificial Inquiries – Réponse LLM' }
+  // Templates communs du cours (github.com/samszo/ArtificialInquiries/comparaison-templates).
+  // « fields » = champs utilisés par l'exercice 10a (les autres champs du template sont conservés).
+  Tache: { label: 'Tâche', template: 'Artificial Inquiries – Tâche',
+    fields: ['dcterms:title', 'dcterms:identifier', 'dcterms:type', 'artinq:utiliseLLM', 'artinq:aPourPrompt', 'artinq:produitReponse'] },
+  LLM: { label: 'LLM', template: 'Artificial Inquiries – Modèle de langage (LLM)',
+    fields: ['dcterms:title', 'artinq:version', 'artinq:fournisseur'] },
+  Prompt: { label: 'Prompt', template: 'Artificial Inquiries – Prompt',
+    fields: ['dcterms:title', 'artinq:texte'] },
+  ReponseLLM: { label: 'Réponse LLM', template: "Artificial Inquiries – Réponse d'un LLM",
+    fields: ['dcterms:title', 'artinq:texte', 'artinq:probleme', 'artinq:cause', 'artinq:amelioration', 'artinq:produitePar'] }
 };
 // Base Omeka commune (le champ « URL de l'API » permet aussi d'utiliser un Omeka local)
 const DEFAULT_API = 'https://humanum-p8.fr/omk_artificialinquiries/api';
@@ -204,14 +210,10 @@ async function loadSchema() {
     if (!tpl) throw new Error(`Modèle de ressource « ${META[key].template} » introuvable : importe-le dans la base`);
     state.classes[key] = { id: classes[0]['o:id'], template: tpl };
   }));
-  // Libellés et termes des propriétés utilisées par les templates
-  const ids = new Set();
-  Object.values(state.classes).forEach(c =>
-    c.template['o:resource_template_property'].forEach(p => ids.add(p['o:property']['o:id'])));
-  await Promise.all([...ids].map(async id => {
-    const p = await api('GET', `/properties/${id}`);
-    state.properties[id] = { term: p['o:term'], label: p['o:label'] };
-  }));
+  // Libellés et termes des propriétés : 2 requêtes (artinq + dcterms) au lieu d'une par propriété
+  const lists = await Promise.all(['artinq', 'dcterms'].map(prefix =>
+    api('GET', '/properties', { params: { vocabulary_prefix: prefix, per_page: 1000 } })));
+  lists.flat().forEach(p => { state.properties[p['o:id']] = { term: p['o:term'], label: p['o:label'] }; });
 }
 
 async function loadItems() {
@@ -240,8 +242,8 @@ function esc(s) {
 }
 
 function templateFields(label) {
-  return state.classes[label].template['o:resource_template_property'].map(p => {
-    const prop = state.properties[p['o:property']['o:id']];
+  const all = state.classes[label].template['o:resource_template_property'].map(p => {
+    const prop = state.properties[p['o:property']['o:id']] || { term: '?', label: '?' };
     const types = p['o:data_type'] || [];
     return {
       id: p['o:property']['o:id'],
@@ -251,6 +253,8 @@ function templateFields(label) {
       isItem: types.some(t => t.startsWith('resource'))
     };
   });
+  const wanted = META[label].fields;
+  return wanted.map(t => all.find(f => f.term === t)).filter(Boolean);
 }
 
 function valueText(v) {
@@ -292,6 +296,7 @@ function itemOptions(selectedId) {
 }
 
 function openForm(item = null) {
+  state.editing = item;
   const label = state.current;
   $('formTitle').textContent = item ? `Modifier « ${item['o:title']} »` : `Nouveau : ${META[label].label}`;
   const fields = templateFields(label);
@@ -321,6 +326,16 @@ function buildPayload(form) {
     'o:resource_class': { 'o:id': state.classes[label].id },
     'o:resource_template': { 'o:id': state.classes[label].template['o:id'] }
   };
+  // En modification : on garde les valeurs des champs que l'IHM n'affiche pas
+  const shown = new Set(templateFields(label).map(f => f.term));
+  if (state.editing) {
+    for (const [k, v] of Object.entries(state.editing)) {
+      if (Array.isArray(v) && k.includes(':') && !k.startsWith('o:') && !shown.has(k)) {
+        payload[k] = v.map(({ type, property_id, '@value': val, '@id': id, value_resource_id, o_label, '@language': lang }) =>
+          ({ type, property_id, '@value': val, '@id': id, value_resource_id, '@language': lang }));
+      }
+    }
+  }
   for (const f of templateFields(label)) {
     const v = form.elements[`p_${f.id}`].value.trim();
     if (!v) continue;
