@@ -170,8 +170,14 @@ const store = {
 /* =====================================================================
    Appels à l'API Omeka S
    ===================================================================== */
+// La base commune n'envoie pas d'en-tête CORS : ses appels passent par le relais omk.php (alwaysdata)
+const RELAYS = { 'https://humanum-p8.fr/omk_artificialinquiries/api': 'https://bellahmer.alwaysdata.net/auth/omk.php' };
+
 function url(path, params = {}) {
-  const u = new URL(state.api.replace(/\/$/, '') + path);
+  const base = state.api.replace(/\/$/, '');
+  let u;
+  if (RELAYS[base]) { u = new URL(RELAYS[base]); u.searchParams.set('path', path); }
+  else u = new URL(base + path);
   for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v);
   if (state.keyId) {
     u.searchParams.set('key_identity', state.keyId);
