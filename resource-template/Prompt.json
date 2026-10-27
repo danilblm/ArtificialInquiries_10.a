@@ -1,5 +1,5 @@
 {
-    "o:label": "Prompt",
+    "o:label": "Artificial Inquiries – Prompt",
     "o:resource_template_property": [
         {
             "o:alternate_label": "Titre",
@@ -19,7 +19,7 @@
             "label": "Title"
         },
         {
-            "o:alternate_label": "Contenu du prompt",
+            "o:alternate_label": null,
             "o:alternate_comment": null,
             "o:is_required": true,
             "o:is_private": false,
@@ -31,14 +31,14 @@
                 }
             ],
             "vocabulary_namespace_uri": "https://humanum-p8.fr/omk_artificialinquiries/onto/artinq#",
-            "vocabulary_label": "Artificial Inquiries",
-            "local_name": "content",
-            "label": "contenu"
+            "vocabulary_label": "Artificial Inquieries",
+            "local_name": "texte",
+            "label": "texte"
         }
     ],
     "o:resource_class": {
         "vocabulary_namespace_uri": "https://humanum-p8.fr/omk_artificialinquiries/onto/artinq#",
-        "vocabulary_label": "Artificial Inquiries",
+        "vocabulary_label": "Artificial Inquieries",
         "local_name": "Prompt",
         "label": "Prompt"
     },

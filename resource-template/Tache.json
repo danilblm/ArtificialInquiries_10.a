@@ -1,0 +1,119 @@
+{
+    "o:label": "Artificial Inquiries – Tâche",
+    "o:resource_template_property": [
+        {
+            "o:alternate_label": "Titre",
+            "o:alternate_comment": null,
+            "o:is_required": true,
+            "o:is_private": false,
+            "o:default_lang": null,
+            "data_types": [
+                {
+                    "name": "literal",
+                    "label": "Text"
+                }
+            ],
+            "vocabulary_namespace_uri": "http://purl.org/dc/terms/",
+            "vocabulary_label": "Dublin Core",
+            "local_name": "title",
+            "label": "Title"
+        },
+        {
+            "o:alternate_label": null,
+            "o:alternate_comment": null,
+            "o:is_required": true,
+            "o:is_private": false,
+            "o:default_lang": null,
+            "data_types": [
+                {
+                    "name": "literal",
+                    "label": "Text"
+                }
+            ],
+            "vocabulary_namespace_uri": "https://humanum-p8.fr/omk_artificialinquiries/onto/artinq#",
+            "vocabulary_label": "Artificial Inquieries",
+            "local_name": "identifiant",
+            "label": "identifiant"
+        },
+        {
+            "o:alternate_label": null,
+            "o:alternate_comment": null,
+            "o:is_required": true,
+            "o:is_private": false,
+            "o:default_lang": null,
+            "data_types": [
+                {
+                    "name": "literal",
+                    "label": "Text"
+                }
+            ],
+            "vocabulary_namespace_uri": "https://humanum-p8.fr/omk_artificialinquiries/onto/artinq#",
+            "vocabulary_label": "Artificial Inquieries",
+            "local_name": "type",
+            "label": "type"
+        },
+        {
+            "o:alternate_label": null,
+            "o:alternate_comment": null,
+            "o:is_required": false,
+            "o:is_private": false,
+            "o:default_lang": null,
+            "data_types": [
+                {
+                    "name": "resource:item",
+                    "label": "Item"
+                }
+            ],
+            "vocabulary_namespace_uri": "https://humanum-p8.fr/omk_artificialinquiries/onto/artinq#",
+            "vocabulary_label": "Artificial Inquieries",
+            "local_name": "utiliseLLM",
+            "label": "utilise le LLM"
+        },
+        {
+            "o:alternate_label": null,
+            "o:alternate_comment": null,
+            "o:is_required": false,
+            "o:is_private": false,
+            "o:default_lang": null,
+            "data_types": [
+                {
+                    "name": "resource:item",
+                    "label": "Item"
+                }
+            ],
+            "vocabulary_namespace_uri": "https://humanum-p8.fr/omk_artificialinquiries/onto/artinq#",
+            "vocabulary_label": "Artificial Inquieries",
+            "local_name": "aPourPrompt",
+            "label": "a pour prompt"
+        },
+        {
+            "o:alternate_label": null,
+            "o:alternate_comment": null,
+            "o:is_required": false,
+            "o:is_private": false,
+            "o:default_lang": null,
+            "data_types": [
+                {
+                    "name": "resource:item",
+                    "label": "Item"
+                }
+            ],
+            "vocabulary_namespace_uri": "https://humanum-p8.fr/omk_artificialinquiries/onto/artinq#",
+            "vocabulary_label": "Artificial Inquieries",
+            "local_name": "produitReponse",
+            "label": "produit la réponse"
+        }
+    ],
+    "o:resource_class": {
+        "vocabulary_namespace_uri": "https://humanum-p8.fr/omk_artificialinquiries/onto/artinq#",
+        "vocabulary_label": "Artificial Inquieries",
+        "local_name": "Tache",
+        "label": "Tâche"
+    },
+    "o:title_property": {
+        "vocabulary_namespace_uri": "http://purl.org/dc/terms/",
+        "vocabulary_label": "Dublin Core",
+        "local_name": "title",
+        "label": "Title"
+    }
+}
