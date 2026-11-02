@@ -295,8 +295,13 @@ function renderList() {
   $('listTable').innerHTML = head + (rows || `<tr><td colspan="${fields.length + 3}" class="hint">Aucun item.</td></tr>`);
 }
 
-function itemOptions(selectedId) {
-  return '<option value="">—</option>' + CLASSES.map(c =>
+// Classe cible de chaque propriété de lien (évite de lier une Tâche à elle-même comme Prompt, etc.)
+const LINK_TARGET = { 'artinq:utiliseLLM': 'LLM', 'artinq:produitePar': 'LLM',
+  'artinq:aPourPrompt': 'Prompt', 'artinq:produitReponse': 'ReponseLLM' };
+
+function itemOptions(selectedId, term) {
+  const targets = LINK_TARGET[term] ? [LINK_TARGET[term]] : CLASSES;
+  return '<option value="">—</option>' + targets.map(c =>
     `<optgroup label="${META[c].label}">${(state.items[c] || []).map(it =>
       `<option value="${it['o:id']}" ${it['o:id'] == selectedId ? 'selected' : ''}>${esc(it['o:title'])}</option>`).join('')}</optgroup>`
   ).join('');
@@ -312,7 +317,7 @@ function openForm(item = null) {
     const req = f.required ? ' required' : '';
     const star = f.required ? ' <span class="req">*</span>' : '';
     const input = f.isItem
-      ? `<select id="f_${f.id}" name="p_${f.id}"${req}>${itemOptions(cur && cur.value_resource_id)}</select>`
+      ? `<select id="f_${f.id}" name="p_${f.id}"${req}>${itemOptions(cur && cur.value_resource_id, f.term)}</select>`
       : `<textarea id="f_${f.id}" name="p_${f.id}"${req}>${esc(cur ? cur['@value'] : '')}</textarea>`;
     return `<label for="f_${f.id}">${esc(f.label)}${star} <span class="hint">(${f.term})</span></label>${input}`;
   }).join('') + `<div class="row"><button class="primary" type="submit">${item ? 'Enregistrer' : 'Créer'}</button>
