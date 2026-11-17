@@ -85,11 +85,14 @@
     <form id="localForm">
       <label for="apiUrl">URL de l'API Omeka S</label>
       <input id="apiUrl" required placeholder="https://humanum-p8.fr/omk_artificialinquiries/api">
+      <label for="email">Email de ton compte Omeka</label>
+      <input id="email" type="email" autocomplete="email" placeholder="prenom.nom@exemple.fr">
       <label for="keyId">key_identity</label>
       <input id="keyId" autocomplete="off">
       <label for="keyCred">key_credential</label>
       <input id="keyCred" type="password" autocomplete="off">
       <p class="hint">Les clés se créent dans Omeka : Utilisateurs → ton compte → onglet « Clés API ».
+        L'email sert à reconnaître tes items : tu ne peux modifier ou supprimer que les tiens.
         Sans clé, l'interface fonctionne en lecture seule (contenus publics).</p>
       <div class="row">
         <button class="primary" type="submit">Se connecter</button>
@@ -154,6 +157,7 @@ const DEFAULT_API = 'https://humanum-p8.fr/omk_artificialinquiries/api';
 
 const state = {
   api: DEFAULT_API, keyId: '', keyCred: '', readOnly: true,
+  userId: null, userName: '',   // compte Omeka connecté (propriétaire des items modifiables)
   classes: {},      // label -> { id, template }
   current: 'Tache',
   properties: {},   // id -> { term, label }
@@ -276,6 +280,15 @@ function renderTabs() {
        <span class="chip">${(state.items[c] || []).length}</span></button>`).join('');
 }
 
+/* Seul le propriétaire d'un item (le compte Omeka connecté) peut le modifier ou le supprimer */
+function canEdit(it) {
+  return !state.readOnly && state.userId !== null && !!it &&
+    !!it['o:owner'] && it['o:owner']['o:id'] === state.userId;
+}
+function findItem(id) {
+  return Object.values(state.items).flat().find(it => String(it['o:id']) === String(id));
+}
+
 function renderList() {
   renderTabs();
   const label = state.current;
@@ -288,9 +301,10 @@ function renderList() {
       <td>${it['o:id']}</td>
       <td>${esc(it['o:title'])}</td>
       ${fields.map(f => `<td>${esc((it[f.term] || []).map(valueText).join(', '))}</td>`).join('')}
-      <td class="actions">
-        <button data-edit="${it['o:id']}" ${state.readOnly ? 'disabled' : ''}>Modifier</button>
-        <button class="danger" data-del="${it['o:id']}" ${state.readOnly ? 'disabled' : ''}>Supprimer</button>
+      <td class="actions">${canEdit(it)
+        ? `<button data-edit="${it['o:id']}">Modifier</button>
+        <button class="danger" data-del="${it['o:id']}">Supprimer</button>`
+        : `<span class="hint" title="Seul l'auteur de cet item peut le modifier">${esc((it['o:owner'] && it['o:owner']['o:name']) || 'lecture seule')}</span>`}
       </td></tr>`).join('');
   $('listTable').innerHTML = head + (rows || `<tr><td colspan="${fields.length + 3}" class="hint">Aucun item.</td></tr>`);
 }
@@ -381,10 +395,15 @@ document.addEventListener('click', async e => {
   if (!t) return;
   if (t.dataset.tab) { state.current = t.dataset.tab; closeForm(); renderList(); }
   if (t.dataset.edit) {                                                    // READ (un item)
-    try { openForm(await api('GET', `/items/${t.dataset.edit}`)); }
+    try {
+      const it = await api('GET', `/items/${t.dataset.edit}`);
+      if (!canEdit(it)) { flash("Tu ne peux modifier que tes propres items.", 'err'); return; }
+      openForm(it);
+    }
     catch (err) { flash(err.message, 'err'); }
   }
   if (t.dataset.del) {                                                     // DELETE
+    if (!canEdit(findItem(t.dataset.del))) { flash("Tu ne peux supprimer que tes propres items.", 'err'); return; }
     if (!confirm(`Supprimer l'item #${t.dataset.del} ?`)) return;
     try { await api('DELETE', `/items/${t.dataset.del}`); await refresh(); flash('Item supprimé.'); }
     catch (err) { flash(err.message, 'err'); }
@@ -504,6 +523,7 @@ async function externalLogin(body) {
   try {
     const { user, keys } = await gateway(body);
     store.set('userName', `${user.name} (${user.id.split(':')[0]})`);
+    if (user.id.startsWith('google:')) $('email').value = user.id.slice(7);   // l'email Google sert à retrouver le compte Omeka
     if (!$('apiUrl').value.trim() || body.provider === 'google') $('apiUrl').value = $('apiUrl2').value.trim() || store.get('apiFromExternal') || DEFAULT_API;
     if (keys) {
       $('keyId').value = keys.key_identity;
@@ -526,9 +546,17 @@ async function start(readOnly) {
   state.keyId = readOnly ? '' : $('keyId').value.trim();
   state.keyCred = readOnly ? '' : $('keyCred').value.trim();
   state.readOnly = readOnly || !state.keyId;
+  state.userId = null; state.userName = '';
+  const email = ($('email').value.trim() || store.get('email') || '').toLowerCase();
   try {
     // Vérifie les clés : une clé invalide renvoie une erreur d'authentification
     if (!state.readOnly) await api('GET', '/users', { params: { per_page: 1 } });
+    // Retrouve le compte Omeka à partir de l'email : il sert à savoir quels items sont les siens
+    if (!state.readOnly && email) {
+      const users = await api('GET', '/users', { params: { email } });
+      const u = (users || []).find(x => (x['o:email'] || '').toLowerCase() === email);
+      if (u) { state.userId = u['o:id']; state.userName = u['o:name']; }
+    }
     await loadSchema();
     await loadItems();
   } catch (err) {
@@ -537,13 +565,15 @@ async function start(readOnly) {
   }
   store.set('api', state.api);
   if (!state.readOnly) { store.set('keyId', state.keyId); store.set('keyCred', state.keyCred); }
+  if (state.userId !== null) store.set('email', email);
   $('loginView').classList.add('hidden');
   $('appView').classList.remove('hidden');
   $('userBox').classList.remove('hidden');
-  const who = store.get('userName');
-  $('userLabel').textContent = (who ? who + ' · ' : '') +
-    (state.readOnly ? 'lecture seule' : `clé ${state.keyId.slice(0, 6)}…`);
+  const who = state.userName || store.get('userName');
+  $('userLabel').textContent = (who ? who + ' · ' : '') + (state.readOnly ? 'lecture seule' : 'connecté');
   renderList();
+  if (!state.readOnly && state.userId === null)
+    flash("Compte Omeka non trouvé avec cet email : tu peux créer des items, mais pas modifier ni supprimer. Déconnecte-toi et indique l'email de ton compte Omeka.", 'err', 15000);
 }
 
 $('localForm').addEventListener('submit', e => {
@@ -553,7 +583,7 @@ $('localForm').addEventListener('submit', e => {
 });
 $('readOnlyBtn').onclick = () => start(true);
 $('logoutBtn').onclick = () => {
-  ['keyId', 'keyCred', 'userName', 'oauthState', 'casPending', 'extUser'].forEach(k => store.set(k, ''));
+  ['keyId', 'keyCred', 'userName', 'oauthState', 'casPending', 'extUser', 'email'].forEach(k => store.set(k, ''));
   location.href = PAGE_URL;
 };
 
@@ -574,6 +604,7 @@ if (qs.has('code') && qs.get('state') && qs.get('state') === store.get('oauthSta
   $('apiUrl').value = store.get('apiFromExternal') || DEFAULT_API;
   externalLogin({ provider: 'cas', ticket: qs.get('ticket'), service: PAGE_URL });
 } else if (store.get('keyId')) {
+  $('email').value = store.get('email') || '';
   $('keyId').value = store.get('keyId');
   $('keyCred').value = store.get('keyCred') || '';
   start(false);
