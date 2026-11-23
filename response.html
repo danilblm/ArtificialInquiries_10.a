@@ -123,6 +123,7 @@
         <h2 id="listTitle" style="margin:0"></h2>
         <button class="primary" id="newBtn">+ Nouveau</button>
       </div>
+      <p class="hint">Seuls les items de l'exercice 10.a sont affichés.</p>
       <div class="tablewrap"><table id="listTable"></table></div>
     </div>
 
@@ -227,10 +228,23 @@ async function loadSchema() {
   props.flat().forEach(p => { state.properties[p['o:id']] = { term: p['o:term'], label: p['o:label'] }; });
 }
 
+/* Les classes et modèles sont communs à tous les exercices : un item de l'exercice 10.a
+   est relié à l'item « Exercice 10.a » de la base par artinq:porteSur */
+const EXERCICE_ID = 20;
+function porteSurId() {
+  const p = Object.entries(state.properties).find(([, v]) => v.term === 'artinq:porteSur');
+  if (!p) throw new Error('Propriété artinq:porteSur introuvable dans le vocabulaire commun');
+  return Number(p[0]);
+}
+
 async function loadItems() {
+  const pid = porteSurId();
   await Promise.all(CLASSES.map(async label => {
     state.items[label] = await api('GET', '/items', {
-      params: { resource_class_id: state.classes[label].id, per_page: 200, sort_by: 'id' }
+      params: {
+        resource_class_id: state.classes[label].id, per_page: 200, sort_by: 'id',
+        'property[0][property]': pid, 'property[0][type]': 'res', 'property[0][text]': EXERCICE_ID
+      }
     });
   }));
 }
@@ -352,6 +366,8 @@ function buildPayload(form) {
     'o:resource_class': { 'o:id': state.classes[label].id },
     'o:resource_template': { 'o:id': state.classes[label].template['o:id'] }
   };
+  // Rattache l'item à l'exercice 10.a (gardé tel quel en modification, avec les autres champs non affichés)
+  payload['artinq:porteSur'] = [{ type: 'resource:item', property_id: porteSurId(), value_resource_id: EXERCICE_ID }];
   // En modification : on garde les valeurs des champs que l'IHM n'affiche pas
   const shown = new Set(templateFields(label).map(f => f.term));
   if (state.editing) {
