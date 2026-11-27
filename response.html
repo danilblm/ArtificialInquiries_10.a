@@ -56,15 +56,24 @@
   .hidden { display: none; }
   .tabs button[aria-selected="true"] .chip { background: rgba(255,255,255,.25); color: inherit; }
   .chip { display: inline-block; padding: 1px 8px; border-radius: 99px; background: var(--soft); font-size: 13px; }
+  .head-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .survey-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; align-items: end; }
+  .status-done { color: var(--accent); font-weight: 600; }
+  .status-todo { color: var(--muted); }
+  .related { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .related a, .exo-link { color: var(--accent); }
 </style>
 </head>
 <body>
 <header>
   <div class="wrap">
-    <h1>Artificial Inquiries<small>Exercice 10a « Room for Improvement » · CRUD via l'API Omeka S</small></h1>
-    <div id="userBox" class="hidden">
-      <span class="user" id="userLabel"></span>
-      <button id="logoutBtn">Se déconnecter</button>
+    <h1>Artificial Inquiries<small data-i18n="subtitle">Exercice 10a « Room for Improvement » · CRUD via l'API Omeka S</small></h1>
+    <div class="head-actions">
+      <button id="langBtn" type="button" aria-label="Langue / Language">EN</button>
+      <div id="userBox" class="hidden">
+        <span class="user" id="userLabel"></span>
+        <button id="logoutBtn" data-i18n="logout">Se déconnecter</button>
+      </div>
     </div>
   </div>
 </header>
@@ -74,56 +83,77 @@
 
   <!-- ===== Connexion ===== -->
   <section id="loginView" class="panel">
-    <h2>Connexion</h2>
-    <div class="auth-methods" role="group" aria-label="Méthode d'authentification">
-      <button data-auth="local" aria-pressed="true">Local (clé API Omeka)</button>
+    <h2 data-i18n="login.title">Connexion</h2>
+    <div class="auth-methods" role="group" aria-label="Authentification">
+      <button data-auth="local" aria-pressed="true" data-i18n="login.local">Local (clé API Omeka)</button>
       <button data-auth="cas" aria-pressed="false">CAS (Paris 8)</button>
       <button data-auth="github" aria-pressed="false">GitHub</button>
       <button data-auth="google" aria-pressed="false">Google</button>
     </div>
 
     <form id="localForm">
-      <label for="apiUrl">URL de l'API Omeka S</label>
+      <label for="apiUrl" data-i18n="login.api">URL de l'API Omeka S</label>
       <input id="apiUrl" required placeholder="https://humanum-p8.fr/omk_artificialinquiries/api">
-      <label for="email">Email de ton compte Omeka</label>
+      <label for="email" data-i18n="login.email">Email de ton compte Omeka</label>
       <input id="email" type="email" autocomplete="email" placeholder="prenom.nom@exemple.fr">
       <label for="keyId">key_identity</label>
       <input id="keyId" autocomplete="off">
       <label for="keyCred">key_credential</label>
       <input id="keyCred" type="password" autocomplete="off">
-      <p class="hint">Les clés se créent dans Omeka : Utilisateurs → ton compte → onglet « Clés API ».
+      <p class="hint" data-i18n="login.hint">Les clés se créent dans Omeka : Utilisateurs → ton compte → onglet « Clés API ».
         L'email sert à reconnaître tes items : tu ne peux modifier ou supprimer que les tiens.
         Sans clé, l'interface fonctionne en lecture seule (contenus publics).</p>
       <div class="row">
-        <button class="primary" type="submit">Se connecter</button>
-        <button type="button" id="readOnlyBtn">Continuer en lecture seule</button>
+        <button class="primary" type="submit" data-i18n="login.submit">Se connecter</button>
+        <button type="button" id="readOnlyBtn" data-i18n="login.readonly">Continuer en lecture seule</button>
       </div>
     </form>
 
     <div id="externalAuth" class="hidden">
-      <label for="gatewayUrl">URL de la passerelle d'authentification (auth.php)</label>
+      <label for="email2" data-i18n="login.email2">Email de ton compte Omeka (facultatif, pour modifier tes items)</label>
+      <input id="email2" type="email" autocomplete="off" placeholder="prenom.nom@exemple.fr">
+      <label for="gatewayUrl" data-i18n="login.gateway">URL de la passerelle d'authentification (auth.php)</label>
       <input id="gatewayUrl" placeholder="https://bellahmer.alwaysdata.net/auth/auth.php">
-      <label for="apiUrl2">URL de l'API Omeka S</label>
+      <label for="apiUrl2" data-i18n="login.api">URL de l'API Omeka S</label>
       <input id="apiUrl2" placeholder="https://humanum-p8.fr/omk_artificialinquiries/api">
       <p class="hint" id="externalHint"></p>
       <div class="row">
         <div id="googleBtn" class="hidden"></div>
-        <button class="primary hidden" type="button" id="githubBtn">Se connecter avec GitHub</button>
-        <button class="primary hidden" type="button" id="casBtn">Se connecter avec le CAS</button>
+        <button class="primary hidden" type="button" id="githubBtn" data-i18n="login.github">Se connecter avec GitHub</button>
+        <button class="primary hidden" type="button" id="casBtn" data-i18n="login.cas">Se connecter avec le CAS</button>
       </div>
     </div>
   </section>
 
   <!-- ===== Application ===== -->
   <section id="appView" class="hidden">
+    <!-- Enquête en cours : participant, choix de l'enquête, exercices faits / à faire -->
+    <div class="panel" id="surveyPanel">
+      <h2 style="margin-top:0" data-i18n="survey.title">Enquête</h2>
+      <p class="hint" id="participantLabel"></p>
+      <div class="survey-grid">
+        <div>
+          <label for="surveySelect" data-i18n="survey.current">Enquête en cours</label>
+          <select id="surveySelect"></select>
+        </div>
+        <div class="row" style="margin-top:0">
+          <button class="primary" id="newSurveyBtn" type="button" data-i18n="survey.new">+ Nouvelle enquête</button>
+        </div>
+      </div>
+      <h3 data-i18n="survey.exercises">Exercices de l'enquête</h3>
+      <div class="tablewrap"><table id="exoTable"></table></div>
+      <h3 data-i18n="survey.related">Exercices liés à l'exercice 10.a</h3>
+      <div class="related" id="relatedList"></div>
+    </div>
+
     <div class="tabs" role="tablist" id="tabs"></div>
 
     <div class="panel">
       <div class="row" style="margin-top:0;justify-content:space-between;align-items:center">
         <h2 id="listTitle" style="margin:0"></h2>
-        <button class="primary" id="newBtn">+ Nouveau</button>
+        <button class="primary" id="newBtn" data-i18n="new">+ Nouveau</button>
       </div>
-      <p class="hint">Seuls les items de l'exercice 10.a sont affichés.</p>
+      <p class="hint" data-i18n="onlyMine">Seuls les items de l'exercice 10.a sont affichés.</p>
       <div class="tablewrap"><table id="listTable"></table></div>
     </div>
 
@@ -155,6 +185,111 @@ const META = {
 };
 // Base Omeka commune (le champ « URL de l'API » permet aussi d'utiliser un Omeka local)
 const DEFAULT_API = 'https://humanum-p8.fr/omk_artificialinquiries/api';
+
+/* =====================================================================
+   Langues : français (traduction) et anglais (termes du vocabulaire commun artinq-commun.ttl)
+   ===================================================================== */
+const LANGS = ['fr', 'en'];
+const CLASS_LABELS = {
+  fr: { Tache: 'Tâche', LLM: 'LLM', Prompt: 'Prompt', ReponseLLM: 'Réponse LLM' },
+  en: { Tache: 'Task', LLM: 'Language model', Prompt: 'Prompt', ReponseLLM: 'LLM output' }
+};
+// Libellés anglais des propriétés (rdfs:label@en du vocabulaire commun)
+const TERM_EN = {
+  'dcterms:title': 'Title', 'dcterms:identifier': 'Identifier', 'dcterms:type': 'Type',
+  'artinq:utiliseLLM': 'uses LLM', 'artinq:aPourPrompt': 'has prompt', 'artinq:produitReponse': 'produces output',
+  'artinq:version': 'version', 'artinq:fournisseur': 'provider', 'artinq:texte': 'text',
+  'artinq:probleme': 'problem', 'artinq:cause': 'cause', 'artinq:amelioration': 'improvement',
+  'artinq:produitePar': 'produced by'
+};
+const I18N = {
+  fr: {
+    subtitle: "Exercice 10a « Room for Improvement » · CRUD via l'API Omeka S",
+    logout: 'Se déconnecter', 'login.title': 'Connexion', 'login.local': 'Local (clé API Omeka)',
+    'login.api': "URL de l'API Omeka S", 'login.email': 'Email de ton compte Omeka',
+    'login.hint': "Les clés se créent dans Omeka : Utilisateurs → ton compte → onglet « Clés API ». L'email sert à reconnaître tes items : tu ne peux modifier ou supprimer que les tiens. Sans clé, l'interface fonctionne en lecture seule (contenus publics).",
+    'login.submit': 'Se connecter', 'login.readonly': 'Continuer en lecture seule',
+    'login.email2': 'Email de ton compte Omeka (facultatif, pour modifier tes items)',
+    'login.gateway': "URL de la passerelle d'authentification (auth.php)",
+    'login.github': 'Se connecter avec GitHub', 'login.cas': 'Se connecter avec le CAS',
+    'survey.title': 'Enquête', 'survey.current': 'Enquête en cours', 'survey.new': '+ Nouvelle enquête',
+    'survey.exercises': "Exercices de l'enquête", 'survey.related': "Exercices liés à l'exercice 10.a",
+    'survey.none': 'Aucune enquête : crée-en une.', 'survey.participant': 'Participant : {name}',
+    'survey.noParticipant': "Connecte-toi (Omeka, GitHub, Google ou CAS) pour gérer ton enquête.",
+    'survey.cannotCreate': "Participant introuvable : avec un accès en lecture seule, il ne peut pas être créé.",
+    'survey.created': 'Enquête créée.', 'survey.title.new': 'Enquête de {name} le {date}',
+    'survey.noRelated': 'Aucun exercice lié.',
+    'exo.col': 'Exercice', 'exo.author': 'Auteur', 'exo.status': 'État', 'exo.done': '✓ fait',
+    'exo.todo': 'à faire', 'exo.open': "Ouvrir l'exercice", 'exo.markedDone': "Exercice 10.a marqué comme fait pour l'enquête en cours.",
+    new: '+ Nouveau', onlyMine: "Seuls les items de l'exercice 10.a sont affichés.",
+    title: 'Titre', edit: 'Modifier', del: 'Supprimer', save: 'Enregistrer', create: 'Créer', cancel: 'Annuler',
+    none: 'Aucun item.', readOnly: 'lecture seule', connected: 'connecté', ownerOnly: "Seul l'auteur de cet item peut le modifier",
+    newTitle: 'Nouveau : {label}', editTitle: 'Modifier « {title} »', created: 'Item créé.', updated: 'Item modifié.',
+    deleted: 'Item supprimé.', confirmDel: "Supprimer l'item #{id} ?",
+    onlyEditOwn: 'Tu ne peux modifier que tes propres items.', onlyDelOwn: 'Tu ne peux supprimer que tes propres items.',
+    noEmailMatch: "Compte Omeka non trouvé avec cet email : tu peux créer des items, mais pas modifier ni supprimer. Déconnecte-toi et indique l'email de ton compte Omeka.",
+    extReadOnly: 'Connecté : {name}, en lecture seule. Pour créer ou modifier, utilise « Local » avec ta clé API Omeka.',
+    'err.auth': "Accès refusé : ta clé API est invalide, ou tu es en lecture seule.",
+    'err.notFound': "Élément introuvable : il a peut-être été supprimé.",
+    'err.server': 'Le serveur Omeka a rencontré un problème. Réessaie dans un instant.',
+    'err.network': 'Impossible de joindre le serveur. Vérifie ta connexion internet.',
+    'err.invalid': 'Les données envoyées ne sont pas valides. Vérifie les champs du formulaire.',
+    'err.other': "Une erreur est survenue ({status}). Réessaie.",
+    'err.login': 'Connexion impossible : {msg}', 'err.provider': 'Connexion {provider} impossible : {msg}',
+    'err.gateway': "La passerelle de connexion ne répond pas. Réessaie plus tard."
+  },
+  en: {
+    subtitle: 'Exercise 10a “Room for Improvement” · CRUD with the Omeka S API',
+    logout: 'Log out', 'login.title': 'Log in', 'login.local': 'Local (Omeka API key)',
+    'login.api': 'Omeka S API URL', 'login.email': 'Email of your Omeka account',
+    'login.hint': 'Create your keys in Omeka: Users → your account → “API keys” tab. The email identifies your items: you can only edit or delete your own. Without a key, the interface is read-only (public content).',
+    'login.submit': 'Log in', 'login.readonly': 'Continue read-only',
+    'login.email2': 'Email of your Omeka account (optional, to edit your items)',
+    'login.gateway': 'Authentication gateway URL (auth.php)',
+    'login.github': 'Log in with GitHub', 'login.cas': 'Log in with CAS',
+    'survey.title': 'Inquiry', 'survey.current': 'Current inquiry', 'survey.new': '+ New inquiry',
+    'survey.exercises': 'Exercises of the inquiry', 'survey.related': 'Exercises related to exercise 10.a',
+    'survey.none': 'No inquiry yet: create one.', 'survey.participant': 'Participant: {name}',
+    'survey.noParticipant': 'Log in (Omeka, GitHub, Google or CAS) to manage your inquiry.',
+    'survey.cannotCreate': 'Participant not found: it cannot be created with read-only access.',
+    'survey.created': 'Inquiry created.', 'survey.title.new': 'Inquiry by {name} on {date}',
+    'survey.noRelated': 'No related exercise.',
+    'exo.col': 'Exercise', 'exo.author': 'Author', 'exo.status': 'Status', 'exo.done': '✓ done',
+    'exo.todo': 'to do', 'exo.open': 'Open the exercise', 'exo.markedDone': 'Exercise 10.a marked as done for the current inquiry.',
+    new: '+ New', onlyMine: 'Only the items of exercise 10.a are shown.',
+    title: 'Title', edit: 'Edit', del: 'Delete', save: 'Save', create: 'Create', cancel: 'Cancel',
+    none: 'No item.', readOnly: 'read-only', connected: 'connected', ownerOnly: 'Only the author of this item can edit it',
+    newTitle: 'New: {label}', editTitle: 'Edit “{title}”', created: 'Item created.', updated: 'Item updated.',
+    deleted: 'Item deleted.', confirmDel: 'Delete item #{id}?',
+    onlyEditOwn: 'You can only edit your own items.', onlyDelOwn: 'You can only delete your own items.',
+    noEmailMatch: 'No Omeka account found with this email: you can create items but not edit or delete them. Log out and enter the email of your Omeka account.',
+    extReadOnly: 'Connected: {name}, read-only. To create or edit, use “Local” with your Omeka API key.',
+    'err.auth': 'Access denied: your API key is invalid, or you are read-only.',
+    'err.notFound': 'Item not found: it may have been deleted.',
+    'err.server': 'The Omeka server ran into a problem. Please try again shortly.',
+    'err.network': 'Cannot reach the server. Check your internet connection.',
+    'err.invalid': 'The data sent is not valid. Check the form fields.',
+    'err.other': 'An error occurred ({status}). Please try again.',
+    'err.login': 'Cannot log in: {msg}', 'err.provider': '{provider} login failed: {msg}',
+    'err.gateway': 'The login gateway does not respond. Please try again later.'
+  }
+};
+const prefs = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} }
+};
+let lang = prefs.get('lang') || ((navigator.language || 'fr').startsWith('fr') ? 'fr' : 'en');
+if (!LANGS.includes(lang)) lang = 'fr';
+function t(key, vars = {}) {
+  const s = (I18N[lang] && I18N[lang][key]) ?? I18N.fr[key] ?? key;
+  return s.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '');
+}
+function classLabel(c) { return CLASS_LABELS[lang][c] || c; }
+function applyI18n() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+  document.getElementById('langBtn').textContent = lang === 'fr' ? 'EN' : 'FR';
+}
 
 const state = {
   api: DEFAULT_API, keyId: '', keyCred: '', readOnly: true,
@@ -191,17 +326,32 @@ function url(path, params = {}) {
   return u;
 }
 
+/* Message compréhensible pour l'utilisateur ; le détail technique reste dans la console */
+function friendlyError(status) {
+  if (status === 401 || status === 403) return t('err.auth');
+  if (status === 404) return t('err.notFound');
+  if (status === 400 || status === 422) return t('err.invalid');
+  if (status >= 500) return t('err.server');
+  return t('err.other', { status });
+}
+
 async function api(method, path, { params, body } = {}) {
-  const res = await fetch(url(path, params), {
-    method,
-    headers: body ? { 'Content-Type': 'application/json' } : {},
-    body: body ? JSON.stringify(body) : undefined
-  });
+  let res;
+  try {
+    res = await fetch(url(path, params), {
+      method,
+      headers: body ? { 'Content-Type': 'application/json' } : {},
+      body: body ? JSON.stringify(body) : undefined
+    });
+  } catch (err) {
+    console.error(method, path, err);
+    throw new Error(t('err.network'));
+  }
   if (res.status === 204) return null;
   const data = await res.json().catch(() => null);
   if (!res.ok) {
-    const e = data && data.errors ? JSON.stringify(data.errors) : res.statusText;
-    throw new Error(`${method} ${path} → ${res.status} ${e}`);
+    console.error(`${method} ${path} → ${res.status}`, data && data.errors ? data.errors : res.statusText);
+    throw new Error(friendlyError(res.status));
   }
   return data;
 }
@@ -215,7 +365,7 @@ async function loadSchema() {
   const [classes, tpls, ...props] = await Promise.all([
     api('GET', '/resource_classes', { params: { vocabulary_prefix: VOCAB, per_page: 1000 } }),
     api('GET', '/resource_templates', { params: { per_page: 1000 } }),
-    ...['artinq', 'dcterms'].map(prefix =>
+    ...['artinq', 'dcterms', 'foaf'].map(prefix =>
       api('GET', '/properties', { params: { vocabulary_prefix: prefix, per_page: 1000 } }))
   ]);
   for (const key of CLASSES) {
@@ -225,17 +375,24 @@ async function loadSchema() {
     if (!tpl) throw new Error(`Modèle de ressource « ${META[key].template} » introuvable : importe-le dans la base`);
     state.classes[key] = { id: cls['o:id'], template: tpl };
   }
+  // Classes de l'enquête (vocabulaire commun)
+  state.surveyClasses = {};
+  for (const key of ['Participant', 'Enquete', 'Exercice', 'Passation']) {
+    const cls = classes.find(c => c['o:term'] === `${VOCAB}:${key}`);
+    if (cls) state.surveyClasses[key] = cls['o:id'];
+  }
   props.flat().forEach(p => { state.properties[p['o:id']] = { term: p['o:term'], label: p['o:label'] }; });
 }
 
 /* Les classes et modèles sont communs à tous les exercices : un item de l'exercice 10.a
    est relié à l'item « Exercice 10.a » de la base par artinq:porteSur */
 const EXERCICE_ID = 20;
-function porteSurId() {
-  const p = Object.entries(state.properties).find(([, v]) => v.term === 'artinq:porteSur');
-  if (!p) throw new Error('Propriété artinq:porteSur introuvable dans le vocabulaire commun');
+function propId(term) {
+  const p = Object.entries(state.properties).find(([, v]) => v.term === term);
+  if (!p) throw new Error(`Propriété ${term} introuvable dans le vocabulaire commun`);
   return Number(p[0]);
 }
+function porteSurId() { return propId('artinq:porteSur'); }
 
 async function loadItems() {
   const pid = porteSurId();
@@ -247,6 +404,152 @@ async function loadItems() {
       }
     });
   }));
+}
+
+/* =====================================================================
+   Enquête (artinq:Enquete) : participant, enquête en cours, exercices faits / à faire
+   - Participant : retrouvé ou créé avec foaf:account + foaf:accountServiceHomepage
+     (même forme que l'item 381 : « identifiant - service »)
+   - Enquête : relié au participant par artinq:hasParticipant
+   - Exercice fait : une Passation (artinq:Passation) qui porte sur l'exercice (artinq:porteSur),
+     réalisée par le participant (artinq:realiseePar) et rattachée à l'enquête (dcterms:isPartOf)
+   - Exercices liés : dcterms:relation sur l'item « Exercice 10.a »
+   ===================================================================== */
+const survey = { participant: null, surveys: [], current: null, exercises: [], done: new Set(), related: [] };
+const lit = (term, v) => ({ type: 'literal', property_id: propId(term), '@value': String(v) });
+const res = (term, id) => ({ type: 'resource:item', property_id: propId(term), value_resource_id: Number(id) });
+const today = () => new Date().toISOString().slice(0, 10);
+const byProp = (term, type, text) => ({
+  'property[0][property]': propId(term), 'property[0][type]': type, 'property[0][text]': text
+});
+
+/* Identité de connexion → compte du participant */
+function identity() {
+  const p = store.get('authProvider');
+  if (p && store.get('authAccount')) return { account: store.get('authAccount'), service: p };
+  if (!state.readOnly && state.userId !== null)
+    return { account: String(state.userId ?? state.userName), service: 'Omeka S' };   // numéro du compte Omeka (pas l'email, qui serait public)
+  return null;
+}
+
+async function findOrCreateParticipant() {
+  const id = identity();
+  if (!id) return null;
+  const found = await api('GET', '/items', { params: {
+    resource_class_id: state.surveyClasses.Participant, per_page: 50,
+    'property[0][property]': propId('foaf:account'), 'property[0][type]': 'eq', 'property[0][text]': id.account,
+    'property[1][property]': propId('foaf:accountServiceHomepage'), 'property[1][type]': 'eq', 'property[1][text]': id.service
+  } });
+  if (found && found.length) return found[0];
+  if (state.readOnly) return { cannotCreate: true, ...id };
+  return api('POST', '/items', { body: {
+    'o:is_public': true,
+    'o:resource_class': { 'o:id': state.surveyClasses.Participant },
+    'dcterms:title': [lit('dcterms:title', `${id.account} - ${id.service}`)],
+    'foaf:account': [lit('foaf:account', id.account)],
+    'foaf:accountServiceHomepage': [lit('foaf:accountServiceHomepage', id.service)]
+  } });
+}
+
+function exoNum(title) {
+  const m = /(\d+)(?:\.(\w))?/.exec(title || '');
+  return m ? Number(m[1]) * 100 + (m[2] ? m[2].charCodeAt(0) : 0) : 9999;
+}
+
+async function loadSurvey() {
+  if (!state.surveyClasses || !state.surveyClasses.Enquete) return;
+  const [exercises, exo10] = await Promise.all([
+    api('GET', '/items', { params: { resource_class_id: state.surveyClasses.Exercice, per_page: 200 } }),
+    api('GET', `/items/${EXERCICE_ID}`)
+  ]);
+  survey.exercises = (exercises || []).sort((a, b) => exoNum(a['o:title']) - exoNum(b['o:title']));
+  survey.related = (exo10['dcterms:relation'] || []).filter(v => v.value_resource_id);
+  survey.participant = await findOrCreateParticipant();
+  if (survey.participant && !survey.participant.cannotCreate) {
+    survey.surveys = await api('GET', '/items', { params: {
+      resource_class_id: state.surveyClasses.Enquete, per_page: 100, sort_by: 'id', sort_order: 'desc',
+      ...byProp('artinq:hasParticipant', 'res', survey.participant['o:id'])
+    } }) || [];
+    const wanted = Number(store.get('survey'));
+    survey.current = survey.surveys.find(s => s['o:id'] === wanted) || survey.surveys[0] || null;
+  } else { survey.surveys = []; survey.current = null; }
+  await loadDone();
+}
+
+async function loadDone() {
+  survey.done = new Set();
+  if (!survey.current) return;
+  store.set('survey', survey.current['o:id']);
+  const passations = await api('GET', '/items', { params: {
+    resource_class_id: state.surveyClasses.Passation, per_page: 200,
+    ...byProp('dcterms:isPartOf', 'res', survey.current['o:id'])
+  } }) || [];
+  passations.forEach(p => (p['artinq:porteSur'] || []).forEach(v => survey.done.add(v.value_resource_id)));
+}
+
+function exerciseLink(ex) {
+  const href = ((ex['artinq:aPourExemple'] || [])[0] || {})['@id'];
+  if (!href) return '';
+  const u = new URL(href);
+  if (survey.current) u.searchParams.set('enquete', survey.current['o:id']);
+  if (survey.participant && survey.participant['o:id']) u.searchParams.set('participant', survey.participant['o:id']);
+  return `<a class="exo-link" href="${esc(u)}" target="_blank" rel="noopener">${t('exo.open')}</a>`;
+}
+
+function renderSurvey() {
+  const p = survey.participant;
+  $('participantLabel').textContent = !p ? t('survey.noParticipant')
+    : p.cannotCreate ? t('survey.cannotCreate')
+    : t('survey.participant', { name: p['o:title'] });
+  $('surveySelect').innerHTML = survey.surveys.length
+    ? survey.surveys.map(s => `<option value="${s['o:id']}" ${survey.current && s['o:id'] === survey.current['o:id'] ? 'selected' : ''}>${esc(s['o:title'])}</option>`).join('')
+    : `<option value="">${esc(t('survey.none'))}</option>`;
+  $('surveySelect').disabled = !survey.surveys.length;
+  $('newSurveyBtn').disabled = state.readOnly || !p || !!p.cannotCreate;
+  $('exoTable').innerHTML = `<tr><th>${t('exo.col')}</th><th>${t('exo.author')}</th><th>${t('exo.status')}</th><th></th></tr>` +
+    survey.exercises.map(ex => {
+      const done = survey.done.has(ex['o:id']);
+      const author = ((ex['bibo:editor'] || [])[0] || {})['@value'] || '';
+      return `<tr><td>${esc(ex['o:title'])}</td><td>${esc(author)}</td>
+        <td class="${done ? 'status-done' : 'status-todo'}">${survey.current ? (done ? t('exo.done') : t('exo.todo')) : '—'}</td>
+        <td class="actions">${exerciseLink(ex)}</td></tr>`;
+    }).join('');
+  $('relatedList').innerHTML = survey.related.length
+    ? survey.related.map(r => {
+        const ex = survey.exercises.find(e => e['o:id'] === r.value_resource_id);
+        return ex ? `<span class="chip">${esc(ex['o:title'])} · ${exerciseLink(ex)}</span>` : `<span class="chip">${esc(r.display_title)}</span>`;
+      }).join('')
+    : `<span class="hint">${t('survey.noRelated')}</span>`;
+}
+
+async function createSurvey() {
+  const p = survey.participant;
+  const name = state.userName || store.get('userName') || p['o:title'];
+  const s = await api('POST', '/items', { body: {
+    'o:is_public': true,
+    'o:resource_class': { 'o:id': state.surveyClasses.Enquete },
+    'dcterms:title': [lit('dcterms:title', t('survey.title.new', { name, date: today() }))],
+    'artinq:hasParticipant': [res('artinq:hasParticipant', p['o:id'])],
+    'artinq:date': [lit('artinq:date', today())]
+  } });
+  survey.surveys.unshift(s); survey.current = s;
+  await loadDone(); renderSurvey(); flash(t('survey.created'));
+}
+
+/* Enregistre l'exercice 10.a comme fait dans l'enquête en cours (une seule passation par enquête) */
+async function markDone() {
+  if (state.readOnly || !survey.current || !survey.participant || survey.participant.cannotCreate) return;
+  if (survey.done.has(EXERCICE_ID)) return;
+  await api('POST', '/items', { body: {
+    'o:is_public': true,
+    'o:resource_class': { 'o:id': state.surveyClasses.Passation },
+    'dcterms:title': [lit('dcterms:title', `Passation – Exercice 10.a – ${survey.participant['o:title']} – ${today()}`)],
+    'artinq:porteSur': [res('artinq:porteSur', EXERCICE_ID)],
+    'artinq:realiseePar': [res('artinq:realiseePar', survey.participant['o:id'])],
+    'dcterms:isPartOf': [res('dcterms:isPartOf', survey.current['o:id'])],
+    'artinq:date': [lit('artinq:date', today())]
+  } });
+  survey.done.add(EXERCICE_ID); renderSurvey(); flash(t('exo.markedDone'));
 }
 
 /* =====================================================================
@@ -273,7 +576,7 @@ function templateFields(label) {
     return {
       id: p['o:property']['o:id'],
       term: prop.term,
-      label: p['o:alternate_label'] || prop.label,
+      label: lang === 'en' && TERM_EN[prop.term] ? TERM_EN[prop.term] : (p['o:alternate_label'] || prop.label),
       required: !!p['o:is_required'],
       isItem: types.some(t => t.startsWith('resource'))
     };
@@ -290,7 +593,7 @@ function valueText(v) {
 
 function renderTabs() {
   $('tabs').innerHTML = CLASSES.map(c =>
-    `<button role="tab" aria-selected="${c === state.current}" data-tab="${c}">${META[c].label}
+    `<button role="tab" aria-selected="${c === state.current}" data-tab="${c}">${classLabel(c)}
        <span class="chip">${(state.items[c] || []).length}</span></button>`).join('');
 }
 
@@ -307,20 +610,20 @@ function renderList() {
   renderTabs();
   const label = state.current;
   const fields = templateFields(label).filter(f => f.term !== 'dcterms:title');
-  $('listTitle').textContent = META[label].label;
+  $('listTitle').textContent = classLabel(label);
   $('newBtn').disabled = state.readOnly;
   const items = state.items[label] || [];
-  const head = `<tr><th>#</th><th>Titre</th>${fields.map(f => `<th>${esc(f.label)}</th>`).join('')}<th></th></tr>`;
+  const head = `<tr><th>#</th><th>${t('title')}</th>${fields.map(f => `<th>${esc(f.label)}</th>`).join('')}<th></th></tr>`;
   const rows = items.map(it => `<tr>
       <td>${it['o:id']}</td>
       <td>${esc(it['o:title'])}</td>
       ${fields.map(f => `<td>${esc((it[f.term] || []).map(valueText).join(', '))}</td>`).join('')}
       <td class="actions">${canEdit(it)
-        ? `<button data-edit="${it['o:id']}">Modifier</button>
-        <button class="danger" data-del="${it['o:id']}">Supprimer</button>`
-        : `<span class="hint" title="Seul l'auteur de cet item peut le modifier">${esc((it['o:owner'] && it['o:owner']['o:name']) || 'lecture seule')}</span>`}
+        ? `<button data-edit="${it['o:id']}">${t('edit')}</button>
+        <button class="danger" data-del="${it['o:id']}">${t('del')}</button>`
+        : `<span class="hint" title="${esc(t('ownerOnly'))}">${esc((it['o:owner'] && it['o:owner']['o:name']) || t('readOnly'))}</span>`}
       </td></tr>`).join('');
-  $('listTable').innerHTML = head + (rows || `<tr><td colspan="${fields.length + 3}" class="hint">Aucun item.</td></tr>`);
+  $('listTable').innerHTML = head + (rows || `<tr><td colspan="${fields.length + 3}" class="hint">${t('none')}</td></tr>`);
 }
 
 // Classe cible de chaque propriété de lien (évite de lier une Tâche à elle-même comme Prompt, etc.)
@@ -330,7 +633,7 @@ const LINK_TARGET = { 'artinq:utiliseLLM': 'LLM', 'artinq:produitePar': 'LLM',
 function itemOptions(selectedId, term) {
   const targets = LINK_TARGET[term] ? [LINK_TARGET[term]] : CLASSES;
   return '<option value="">—</option>' + targets.map(c =>
-    `<optgroup label="${META[c].label}">${(state.items[c] || []).map(it =>
+    `<optgroup label="${classLabel(c)}">${(state.items[c] || []).map(it =>
       `<option value="${it['o:id']}" ${it['o:id'] == selectedId ? 'selected' : ''}>${esc(it['o:title'])}</option>`).join('')}</optgroup>`
   ).join('');
 }
@@ -338,7 +641,7 @@ function itemOptions(selectedId, term) {
 function openForm(item = null) {
   state.editing = item;
   const label = state.current;
-  $('formTitle').textContent = item ? `Modifier « ${item['o:title']} »` : `Nouveau : ${META[label].label}`;
+  $('formTitle').textContent = item ? t('editTitle', { title: item['o:title'] }) : t('newTitle', { label: classLabel(label) });
   const fields = templateFields(label);
   $('itemForm').innerHTML = fields.map(f => {
     const cur = item && item[f.term] && item[f.term][0];
@@ -348,8 +651,8 @@ function openForm(item = null) {
       ? `<select id="f_${f.id}" name="p_${f.id}"${req}>${itemOptions(cur && cur.value_resource_id, f.term)}</select>`
       : `<textarea id="f_${f.id}" name="p_${f.id}"${req}>${esc(cur ? cur['@value'] : '')}</textarea>`;
     return `<label for="f_${f.id}">${esc(f.label)}${star} <span class="hint">(${f.term})</span></label>${input}`;
-  }).join('') + `<div class="row"><button class="primary" type="submit">${item ? 'Enregistrer' : 'Créer'}</button>
-      <button type="button" id="cancelBtn">Annuler</button></div>`;
+  }).join('') + `<div class="row"><button class="primary" type="submit">${item ? t('save') : t('create')}</button>
+      <button type="button" id="cancelBtn">${t('cancel')}</button></div>`;
   $('itemForm').dataset.id = item ? item['o:id'] : '';
   $('formPanel').classList.remove('hidden');
   $('cancelBtn').onclick = closeForm;
@@ -402,31 +705,51 @@ $('itemForm').addEventListener('submit', async e => {
     else await api('POST', '/items', { body });           // CREATE
     closeForm();
     await refresh();
-    flash(id ? 'Item modifié.' : 'Item créé.');
+    flash(id ? t('updated') : t('created'));
+    if (!id) await markDone().catch(err => flash(err.message, 'err'));   // l'exercice 10.a devient « fait » dans l'enquête en cours
   } catch (err) { flash(err.message, 'err'); }
 });
 
 document.addEventListener('click', async e => {
-  const t = e.target.closest('button');
-  if (!t) return;
-  if (t.dataset.tab) { state.current = t.dataset.tab; closeForm(); renderList(); }
-  if (t.dataset.edit) {                                                    // READ (un item)
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  if (btn.dataset.tab) { state.current = btn.dataset.tab; closeForm(); renderList(); }
+  if (btn.dataset.edit) {                                                  // READ (un item)
     try {
-      const it = await api('GET', `/items/${t.dataset.edit}`);
-      if (!canEdit(it)) { flash("Tu ne peux modifier que tes propres items.", 'err'); return; }
+      const it = await api('GET', `/items/${btn.dataset.edit}`);
+      if (!canEdit(it)) { flash(t('onlyEditOwn'), 'err'); return; }
       openForm(it);
     }
     catch (err) { flash(err.message, 'err'); }
   }
-  if (t.dataset.del) {                                                     // DELETE
-    if (!canEdit(findItem(t.dataset.del))) { flash("Tu ne peux supprimer que tes propres items.", 'err'); return; }
-    if (!confirm(`Supprimer l'item #${t.dataset.del} ?`)) return;
-    try { await api('DELETE', `/items/${t.dataset.del}`); await refresh(); flash('Item supprimé.'); }
+  if (btn.dataset.del) {                                                   // DELETE
+    if (!canEdit(findItem(btn.dataset.del))) { flash(t('onlyDelOwn'), 'err'); return; }
+    if (!confirm(t('confirmDel', { id: btn.dataset.del }))) return;
+    try { await api('DELETE', `/items/${btn.dataset.del}`); await refresh(); flash(t('deleted')); }
     catch (err) { flash(err.message, 'err'); }
   }
 });
 
 $('newBtn').onclick = () => openForm();
+
+/* Enquête : changement d'enquête en cours, création d'une enquête */
+$('surveySelect').onchange = async e => {
+  survey.current = survey.surveys.find(s => String(s['o:id']) === e.target.value) || null;
+  try { await loadDone(); } catch (err) { flash(err.message, 'err'); }
+  renderSurvey();
+};
+$('newSurveyBtn').onclick = () => createSurvey().catch(err => flash(err.message, 'err'));
+
+/* Changement de langue : français / anglais */
+$('langBtn').onclick = () => {
+  lang = lang === 'fr' ? 'en' : 'fr';
+  prefs.set('lang', lang);
+  applyI18n();
+  if (!$('appView').classList.contains('hidden')) {
+    updateUserLabel(); renderList(); renderSurvey();
+    if (!$('formPanel').classList.contains('hidden')) openForm(state.editing);
+  }
+};
 
 /* =====================================================================
    Authentification
@@ -442,9 +765,16 @@ const PAGE_URL = location.origin + location.pathname;   // URL de retour (sans p
 let gatewayCfg = null;
 
 const HINTS = {
-  google: "Connexion avec ton compte Google. L'identité est vérifiée par la passerelle auth.php.",
-  github: "Tu vas être redirigé vers GitHub pour autoriser l'application, puis revenir ici.",
-  cas: "Tu vas être redirigé vers le serveur CAS de l'université, puis revenir ici."
+  fr: {
+    google: "Connexion avec ton compte Google. L'identité est vérifiée par la passerelle auth.php.",
+    github: "Tu vas être redirigé vers GitHub pour autoriser l'application, puis revenir ici.",
+    cas: "Tu vas être redirigé vers le serveur CAS de l'université, puis revenir ici."
+  },
+  en: {
+    google: 'Log in with your Google account. Your identity is checked by the auth.php gateway.',
+    github: 'You will be redirected to GitHub to authorise the application, then come back here.',
+    cas: 'You will be redirected to the university CAS server, then come back here.'
+  }
 };
 
 function gatewayUrl() {
@@ -481,7 +811,7 @@ function loadScript(src) {
 
 async function showProvider(p) {
   ['googleBtn', 'githubBtn', 'casBtn'].forEach(id => $(id).classList.add('hidden'));
-  $('externalHint').textContent = HINTS[p];
+  $('externalHint').textContent = HINTS[lang][p];
   store.set('gateway', gatewayUrl());
   try {
     const cfg = await loadGatewayConfig();
@@ -504,7 +834,7 @@ async function showProvider(p) {
       $('casBtn').classList.remove('hidden');
     }
   } catch (err) {
-    flash(`${err.message}. Vérifie que WAMP tourne et que auth.php est configuré.`, 'err');
+    console.error(err); flash(t('err.gateway'), 'err');
   }
 }
 
@@ -519,6 +849,7 @@ document.querySelectorAll('[data-auth]').forEach(b => b.addEventListener('click'
 $('githubBtn').onclick = () => {
   const st = 'github-' + crypto.getRandomValues(new Uint32Array(1))[0];
   store.set('oauthState', st);
+  if ($('email2').value.trim()) store.set('email', $('email2').value.trim());
   store.set('apiFromExternal', $('apiUrl2').value.trim() || DEFAULT_API);
   const u = new URL('https://github.com/login/oauth/authorize');
   u.searchParams.set('client_id', gatewayCfg.github_client_id);
@@ -530,31 +861,42 @@ $('githubBtn').onclick = () => {
 
 $('casBtn').onclick = () => {
   store.set('casPending', '1');
+  if ($('email2').value.trim()) store.set('email', $('email2').value.trim());
   store.set('apiFromExternal', $('apiUrl2').value.trim() || DEFAULT_API);
   location.href = gatewayCfg.cas_server.replace(/\/$/, '') + '/login?service=' + encodeURIComponent(PAGE_URL);
 };
 
 /* Appelée après Google, ou au retour de GitHub / du CAS */
+const PROVIDER_NAMES = { github: 'GitHub', google: 'Google', cas: 'CAS Paris 8' };
+
 async function externalLogin(body) {
   try {
     const { user, keys } = await gateway(body);
-    store.set('userName', `${user.name} (${user.id.split(':')[0]})`);
-    if (user.id.startsWith('google:')) $('email').value = user.id.slice(7);   // l'email Google sert à retrouver le compte Omeka
+    const [provider, account] = [user.id.split(':')[0], user.id.split(':').slice(1).join(':')];
+    store.set('userName', `${user.name} (${provider})`);
+    store.set('authProvider', PROVIDER_NAMES[provider] || provider);
+    store.set('authAccount', account);
+    // Email du compte Omeka (pour reconnaître ses items) : celui saisi avant la connexion, sinon l'email Google
+    const omekaEmail = $('email2').value.trim() || store.get('email') || (provider === 'google' ? account : '');
+    $('email').value = omekaEmail;
     if (!$('apiUrl').value.trim() || body.provider === 'google') $('apiUrl').value = $('apiUrl2').value.trim() || store.get('apiFromExternal') || DEFAULT_API;
     if (keys) {
       $('keyId').value = keys.key_identity;
       $('keyCred').value = keys.key_credential;
       await start(false);
     } else {
-      // Identité vérifiée, mais pas de clé associée : l'utilisateur saisit sa propre clé Omeka
-      // → on entre directement dans l'application en lecture seule
+      // Identité vérifiée, mais pas de clé associée : lecture seule
       store.set('extUser', '1');
       $('keyId').value = ''; $('keyCred').value = '';
       await start(true);
-      if (!$('appView').classList.contains('hidden'))
-        flash(`Connecté : ${user.name} (${user.id}), en lecture seule. Pour créer ou modifier, déconnecte-toi et utilise « Local » avec ta clé API de la base Omeka.`, 'ok', 15000);
+      if (!$('appView').classList.contains('hidden')) flash(t('extReadOnly', { name: user.name }), 'ok', 15000);
     }
-  } catch (err) { flash(`Connexion ${body.provider} impossible : ${err.message}`, 'err'); }
+  } catch (err) { flash(t('err.provider', { provider: body.provider, msg: err.message }), 'err'); }
+}
+
+function updateUserLabel() {
+  const who = state.userName || store.get('userName');
+  $('userLabel').textContent = (who ? who + ' · ' : '') + (state.readOnly ? t('readOnly') : t('connected'));
 }
 
 async function start(readOnly) {
@@ -576,7 +918,7 @@ async function start(readOnly) {
     await loadSchema();
     await loadItems();
   } catch (err) {
-    flash(`Connexion impossible : ${err.message}. Vérifie l'URL, les clés et la configuration CORS d'Omeka.`, 'err');
+    flash(t('err.login', { msg: err.message }), 'err');
     return;
   }
   store.set('api', state.api);
@@ -585,21 +927,25 @@ async function start(readOnly) {
   $('loginView').classList.add('hidden');
   $('appView').classList.remove('hidden');
   $('userBox').classList.remove('hidden');
-  const who = state.userName || store.get('userName');
-  $('userLabel').textContent = (who ? who + ' · ' : '') + (state.readOnly ? 'lecture seule' : 'connecté');
+  updateUserLabel();
   renderList();
-  if (!state.readOnly && state.userId === null)
-    flash("Compte Omeka non trouvé avec cet email : tu peux créer des items, mais pas modifier ni supprimer. Déconnecte-toi et indique l'email de ton compte Omeka.", 'err', 15000);
+  if (!state.readOnly && state.userId === null) flash(t('noEmailMatch'), 'err', 15000);
+  // Enquête : participant, enquête en cours, exercices faits / à faire
+  try { await loadSurvey(); } catch (err) { flash(err.message, 'err'); }
+  renderSurvey();
 }
 
 $('localForm').addEventListener('submit', e => {
   e.preventDefault();
-  if (!store.get('extUser')) store.set('userName', '');   // garde le nom Google/GitHub/CAS si on vient d'une connexion externe
+  if (!store.get('extUser')) {   // connexion locale : le participant est identifié par son compte Omeka
+    store.set('userName', ''); store.set('authProvider', ''); store.set('authAccount', '');
+  }
   start(false);
 });
 $('readOnlyBtn').onclick = () => start(true);
 $('logoutBtn').onclick = () => {
-  ['keyId', 'keyCred', 'userName', 'oauthState', 'casPending', 'extUser', 'email'].forEach(k => store.set(k, ''));
+  ['keyId', 'keyCred', 'userName', 'oauthState', 'casPending', 'extUser', 'email', 'authProvider', 'authAccount', 'survey']
+    .forEach(k => store.set(k, ''));
   location.href = PAGE_URL;
 };
 
@@ -608,7 +954,9 @@ $('apiUrl').value = store.get('api') || DEFAULT_API;
 $('apiUrl2').value = store.get('apiFromExternal') || DEFAULT_API;
 $('gatewayUrl').value = store.get('gateway') || DEFAULT_GATEWAY;
 
+applyI18n();
 const qs = new URLSearchParams(location.search);
+if (qs.get('enquete')) store.set('survey', qs.get('enquete'));   // lien depuis un autre exercice de l'enquête
 if (qs.has('code') && qs.get('state') && qs.get('state') === store.get('oauthState')) {
   history.replaceState(null, '', PAGE_URL);
   store.set('oauthState', '');
